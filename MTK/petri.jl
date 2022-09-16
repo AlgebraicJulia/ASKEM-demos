@@ -26,11 +26,18 @@ migrate!(bnsir, psir)
 bnsir
 to_graphviz(bnsir)
 
+make_depvar(p,t) = :($p($t))
+
+@assert make_depvar(:a, :t) == :(a(t))
+@assert make_depvar(:y, :x) == :(y(x))
+
 function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwork})
   varstmt = :(@variables t)
-  append!(varstmt.args, bnsir[:variable])
+  @show varnames = bnsir[:variable]
+  append!(varstmt.args, make_depvar.(bnsir[:variable], :t))
 
   paramstmt = :(@parameters)
+  params = bnsir[:parameter]
   append!(paramstmt.args, bnsir[:parameter])
 
   diffstmt = :(D = Differential(t))
@@ -69,6 +76,8 @@ function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwor
   append!(eq.args, eqns)
   eqnstmt = :(eqs = $eq)
 
+  varnameexpr = Expr(:tuple, varnames...)
+  parnameexpr = Expr(:tuple, params...)
 
   return quote
     $varstmt
@@ -76,7 +85,7 @@ function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwor
     $diffstmt
     $(ϕs...)
     $eqnstmt
-    return ODESystem(eqs, t, name=:PetriNet)
+    return $varnameexpr, $parnameexpr, ODESystem(eqs, t, name=:PetriNet)
   end
 
 end
@@ -85,11 +94,24 @@ fex = compile(bnsir)
 
 quote
   #= /Users/fairbanksj/github/AlgebraicJulia/ASKEM-demos/MTK/petri.jl:39 =# 
-  @variables t S I R
+  @variables t S(t) I(t) R(t)
   @parameters inf rec
   D = Differential(t)
   ϕ1 = inf * S * I
   ϕ2 = rec * I
   eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
   return ODESystem(eqs, t, name = :PetriNet)
+end
+println(fex)
+
+(params...)
+
+begin
+  @variables t S(t) I(t) R(t)
+  @parameters inf rec
+  D = Differential(t)
+  ϕ1 = inf * S * I
+  ϕ2 = rec * I
+  eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
+  ((S, I, R), (inf, rec), ODESystem(eqs, t, name = :PetriNet))
 end
