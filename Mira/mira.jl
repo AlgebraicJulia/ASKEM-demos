@@ -97,4 +97,4 @@ end
 
 add_part!(M, :NC, subject_NC=4, outcome_NC=1, nameNC=:return, rateNC=2.0, lawNC=:linear)
 M
-JSON.print(M, 2)
+JSON.print(generate_json_acset(M), 2)
