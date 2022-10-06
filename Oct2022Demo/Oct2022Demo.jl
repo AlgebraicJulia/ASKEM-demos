@@ -26,8 +26,8 @@ typed_stratify(typed_model1, typed_model2) =
 abstract type AbstractStrataSpec end
 
 struct StrataSpec <: AbstractStrataSpec
-  tpn::AbstractLabeledPetriNet
-  tlist::[[Symbol]]
+  tpn::ACSetTransformation
+  tlist::Vector{Vector{Symbol}}
 end
 
 """Modify a typed petri net to add cross terms"""
@@ -49,11 +49,15 @@ function add_cross_terms(pn_crossterms, type_system)
   return homomorphism(pn, codom(typed_pn); initial=type_comps, 
                         type_components=(Name=x->nothing,),)
 end
+
+function add_cross_terms(ss::StrataSpec, type_system)
+  return add_cross_terms(ss.tpn=>ss.tlist, type_system)
+end
   
 """Add cross terms before taking pullback"""
-function stratify(ss1, ss2)
-  # type_system = codomain of ss1.tpn
-  return pullback([add_cross_terms(pn, type_system) for pn in [ss1.tpn, ss2.tpn]]) |> apex
+function stratify(ss1, ss2, type_system)
+  #type_system = codom(ss1.tpn)
+  return Catlab.CategoricalAlgebra.pullback(add_cross_terms(ss1,type_system), add_cross_terms(ss2, type_system)) |> apex
 end
 
 counter(a) = [count(==(i),a) for i in unique(a)]
