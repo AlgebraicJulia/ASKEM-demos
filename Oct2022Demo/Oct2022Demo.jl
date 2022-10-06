@@ -57,7 +57,15 @@ end
 """Add cross terms before taking pullback"""
 function stratify(ss1, ss2, type_system)
   #type_system = codom(ss1.tpn)
-  return Catlab.CategoricalAlgebra.pullback(add_cross_terms(ss1,type_system), add_cross_terms(ss2, type_system)) |> apex
+
+  pb = Catlab.CategoricalAlgebra.pullback(add_cross_terms(ss1,type_system), add_cross_terms(ss2, type_system))
+
+  apb = pb |> apex
+
+  f = proj1(pb)
+
+
+  return apb, makeObsFunction(proj1(pb))
 end
 
 counter(a) = [count(==(i),a) for i in unique(a)]
@@ -97,7 +105,7 @@ get_recovered_states(g::AbstractLabelledPetriNet) =
 get_dead_states(g::AbstractLabelledPetriNet) =
    [i for (i,s) in enumerate(g[:sname]) if occursin("D", string(s))]
 
-function obsSIRD(model::AbstractLabelledPetriNet, sol, sample_times)
+#=function obsSIRD(model::AbstractLabelledPetriNet, sol, sample_times)
     inf_sample_vals = sol(sample_times)[get_infected_states(model),:]
     susc_sample_vals = sol(sample_times)[get_susceptible_states(model),:]
     rec_sample_vals = sol(sample_times)[get_recovered_states(model),:]
@@ -111,18 +119,40 @@ function obsSIRD(model::AbstractLabelledPetriNet, sol, sample_times)
     labels = reshape(["I", "R or V", "S", "D"],1,4)
 
     return hcat(total_inf_samples, total_rec_samples, total_susc_samples, total_dead_samples), labels
+end=#
+
+function state_preimage(f::ACSetTransformation, y)
+  fS = f.components.S
+  return [ x for x in dom(fS) if fS(x) == y ]
 end
+
+function pushforwardObs(f::ACSetTransformation,sol,sample_times)
+  
+  state_samples = sol(sample_times)
+  obs_samples = []
+  for ii in 1:ns(dom(f))
+    tmp = sol(sample_times)[state_preimage(f, ii),:]
+    push!(obs_samples,map(sum, eachcol(tmp)))
+  end
+
+  return hcat(obs_samples...), snames(dom(f))
+end
+
+function makeObsFunction(f::ACSetTransformation)
+  return (sol, sample_times) -> pushforwardObs(f, sol, sample_times)
+end
+
 
 function generateData(model::AbstractLabelledPetriNet, p, u0, tspan, num_samples, obs_func)
     sample_times = range(tspan[1], stop=tspan[2], length=num_samples)
 
     sol = simulate(model, u0, p, tspan) # , tstops=sample_times
 
-    obs_true, obs_lbls = obs_func(model, sol, sample_times)
+    obs_true, obs_lbls = obs_func(sol, sample_times)
     
     obs_noisy = obs_true .* (ones(size(obs_true)...)+0.1rand(size(obs_true)...)-0.05ones(size(obs_true)...))
 
-    return obs_noisy, sample_times, prob, sol, obs_true
+    return obs_noisy, sample_times, sol, obs_true
 end
 
 function makeLossFunction(model::AbstractLabelledPetriNet, obs_func, op, tend, sample_data, sample_times)
@@ -137,7 +167,7 @@ function makeLossFunction(model::AbstractLabelledPetriNet, obs_func, op, tend, s
     function loss(p)
         sol = solve(remake(op,tspan=(0.0,tend),p=p), Tsit5(), tstops=sample_times)
 
-        vals, _ = obs_func(model, sol, sample_times[1:findlast(sample_times .<= tend)])
+        vals, _ = obs_func(sol, sample_times[1:findlast(sample_times .<= tend)])
         inf_vals = vals[:,1]
         rec_vals = vals[:,2]
         susc_vals = vals[:,3]
@@ -163,8 +193,11 @@ function makeLossFunction(model::AbstractLabelledPetriNet, obs_func, op, tend, s
 
 end
 
-function calibrate(model, obs_func, u0, p_init, training_data, sample_times; name="")
-    
+function calibrate(ss::StrataSpec, obs_func, u0, p_init, training_data, sample_times; name="")
+  return calibrate(dom(ss.tpn), obs_func, u0, p_init, training_data, sample_times, name=name)
+end
+
+function calibrate(model::AbstractPetriNet, obs_func, u0, p_init, training_data, sample_times; name="")
     rxn = MakeReactionSystem(model)
 
     tspan = (minumum(sample_times), maximum(sample_times))
@@ -175,7 +208,7 @@ function calibrate(model, obs_func, u0, p_init, training_data, sample_times; nam
     loss = 0
     sol_estimate = Nothing
 
-    for i in 1:7:50 # 2:8:50 # 25:25:50 # 
+    for i in 1:(length(sample_times)/10):length(sample_times) # 2:8:50 # 25:25:50 # 
         l_func = makeLossFunction(model, obs_func, prob, sample_times[i], training_data, sample_times)
         
         res_ode = DiffEqFlux.sciml_train(l_func, p_estimate, #=ADAM(0.05), cb=callback,=# maxiters=2000, abstol=1e-4, reltol=1e-4,
