@@ -31,7 +31,8 @@ struct StrataSpec <: AbstractStrataSpec
 end
 
 """Modify a typed petri net to add cross terms"""
-function add_cross_terms(pn_crossterms, type_system)
+#=function add_cross_terms(pn_crossterms, type_system)
+
   typed_pn, crossterms = deepcopy.(pn_crossterms)
   pn = dom(typed_pn)
   type_comps = Dict([k=>collect(v) for (k,v) in pairs(components(typed_pn))])
@@ -52,20 +53,59 @@ end
 
 function add_cross_terms(ss::StrataSpec, type_system)
   return add_cross_terms(ss.tpn=>ss.tlist, type_system)
+end=#
+
+function add_cross_terms!(ss::StrataSpec, type_system)
+  typed_pn = ss.tpn
+  crossterms = ss.tlist
+  pn = dom(typed_pn)
+  type_comps = Dict([k=>collect(v) for (k,v) in pairs(components(typed_pn))])
+  for (s_i,cts) in enumerate(crossterms)
+    for ct in cts 
+      type_ind = findfirst(==(ct), type_system[:tname])
+      is, os = [incident(type_system, type_ind, f) for f in [:it, :ot]]
+      new_t = add_part!(pn, :T; tname=ct)
+      add_parts!(pn, :I, length(is); is=s_i, it=new_t)
+      add_parts!(pn, :O, length(os); os=s_i, ot=new_t)
+      push!(type_comps[:T], type_ind)
+      append!(type_comps[:I], is); append!(type_comps[:O], os); 
+    end
+  end
+  return homomorphism(pn, codom(typed_pn); initial=type_comps, 
+                        type_components=(Name=x->nothing,),)
+end
+
+function add_cross_terms(ss::StrataSpec, type_system)
+  typed_pn = deepcopy(ss.tpn)
+  crossterms = deepcopy(ss.tlist)
+  pn = dom(typed_pn)
+  type_comps = Dict([k=>collect(v) for (k,v) in pairs(components(typed_pn))])
+  for (s_i,cts) in enumerate(crossterms)
+    for ct in cts 
+      type_ind = findfirst(==(ct), type_system[:tname])
+      is, os = [incident(type_system, type_ind, f) for f in [:it, :ot]]
+      new_t = add_part!(pn, :T; tname=ct)
+      add_parts!(pn, :I, length(is); is=s_i, it=new_t)
+      add_parts!(pn, :O, length(os); os=s_i, ot=new_t)
+      push!(type_comps[:T], type_ind)
+      append!(type_comps[:I], is); append!(type_comps[:O], os); 
+    end
+  end
+  return homomorphism(pn, codom(typed_pn); initial=type_comps, 
+                        type_components=(Name=x->nothing,),)
 end
   
 """Add cross terms before taking pullback"""
-function stratify(ss1, ss2, type_system)
+function stratify_span(ss1, ss2, type_system)
   #type_system = codom(ss1.tpn)
-
   pb = Catlab.CategoricalAlgebra.pullback(add_cross_terms(ss1,type_system), add_cross_terms(ss2, type_system))
+  return pb
+end
 
-  apb = pb |> apex
-
+stratify(ss1, ss2, type_system) = begin
+  pb = stratify_span(ss1,ss2,type_system)
   f = proj1(pb)
-
-
-  return apb, makeObsFunction(proj1(pb))
+  return apex(pb), makeObsFunction(f)
 end
 
 counter(a) = [count(==(i),a) for i in unique(a)]
@@ -90,7 +130,7 @@ function simulate(model, u0, p, tspan)
     rxn = MakeReactionSystem(model)
     prob = ODEProblem(rxn, u0, tspan, p)
     sol = solve(prob, Tsit5())
-    return sol
+    return sol, prob
 end
 
 get_infected_states(g::AbstractLabelledPetriNet) =
@@ -130,12 +170,12 @@ function pushforwardObs(f::ACSetTransformation,sol,sample_times)
   
   state_samples = sol(sample_times)
   obs_samples = []
-  for ii in 1:ns(dom(f))
+  for ii in 1:ns(codom(f))
     tmp = sol(sample_times)[state_preimage(f, ii),:]
     push!(obs_samples,map(sum, eachcol(tmp)))
   end
 
-  return hcat(obs_samples...), snames(dom(f))
+  return hcat(obs_samples...), snames(codom(f))
 end
 
 function makeObsFunction(f::ACSetTransformation)
@@ -146,16 +186,16 @@ end
 function generateData(model::AbstractLabelledPetriNet, p, u0, tspan, num_samples, obs_func)
     sample_times = range(tspan[1], stop=tspan[2], length=num_samples)
 
-    sol = simulate(model, u0, p, tspan) # , tstops=sample_times
+    sol, prob = simulate(model, u0, p, tspan) # , tstops=sample_times
 
     obs_true, obs_lbls = obs_func(sol, sample_times)
     
     obs_noisy = obs_true .* (ones(size(obs_true)...)+0.1rand(size(obs_true)...)-0.05ones(size(obs_true)...))
 
-    return obs_noisy, sample_times, sol, obs_true
+    return obs_noisy, sample_times, prob, sol, obs_true, obs_lbls
 end
 
-function makeLossFunction(model::AbstractLabelledPetriNet, obs_func, op, tend, sample_data, sample_times)
+function makeLossFunction(obs_func, states_to_count, op, tend, sample_data, sample_times, lbls_data)
     # Loss on all populations
     #=loss = function (p)
         sol = solve(remake(op,tspan=(0.0,tend),p=p), Tsit5(), tstops=sample_times)
@@ -163,44 +203,33 @@ function makeLossFunction(model::AbstractLabelledPetriNet, obs_func, op, tend, s
         loss = sum(abs2, vals .- sample_vals[:,1:size(vals)[2]])   
         return loss, sol
     end=#
+    
+    # obs_func = makeObsFunction(proj1_of_pb)
 
     function loss(p)
         sol = solve(remake(op,tspan=(0.0,tend),p=p), Tsit5(), tstops=sample_times)
 
-        vals, _ = obs_func(sol, sample_times[1:findlast(sample_times .<= tend)])
-        inf_vals = vals[:,1]
-        rec_vals = vals[:,2]
-        susc_vals = vals[:,3]
-        dead_vals = vals[:,4]
+        vals, lbls = obs_func(sol, sample_times[1:findlast(sample_times .<= tend)])
+        l = 0
+        for curr_st in states_to_count
+          idx_vals = findfirst(x->x == curr_st,lbls)
+          idx_samps = findfirst(x->x == curr_st, lbls_data)
+          l += sum(abs2, vals[:,idx_vals] .- sample_data[1:size(vals)[1],idx_samps])
+        end
 
-        #loss = sum(abs2, vals[2,:] .- sample_vals[:,1:size(vals)[2]][2,:])
-        inf_samples = sample_data[:,1]
-        rec_samples = sample_data[:,2]
-        susc_samples = sample_data[:,3]
-        dead_samples = sample_data[:,4]
-
-        inf_loss = sum(abs2, inf_vals .- inf_samples[1:size(inf_vals)[1]])
-        susc_loss = sum(abs2, susc_vals .- susc_samples[1:size(susc_vals)[1]])
-        rec_loss = sum(abs2, rec_vals .- rec_samples[1:size(rec_vals)[1]])
-        #=dead_loss = sum(abs2, dead_vals .- dead_samples[1:size(dead_vals)[1]])=#
-
-        # Lines for debugging
-        # println(size(sample_times[1:findlast(sample_times .<= tend)]),": ",maximum(sample_times[1:findlast(sample_times .<= tend)]))
-        # println(size(vals), ": ", size(inf_vals), ": ", size(inf_samples))
-
-        return susc_loss + inf_loss + rec_loss, sol
+        return l, sol
     end
-
+    return loss
 end
 
-function calibrate(ss::StrataSpec, obs_func, u0, p_init, training_data, sample_times; name="")
-  return calibrate(dom(ss.tpn), obs_func, u0, p_init, training_data, sample_times, name=name)
+function calibrate(ss::StrataSpec, obs_func, states_to_count, u0, p_init, training_data, sample_times, data_labels; name="")
+  return calibrate(dom(ss.tpn), obs_func, states_to_count, u0, p_init, training_data, sample_times, data_labels, name=name)
 end
 
-function calibrate(model::AbstractPetriNet, obs_func, u0, p_init, training_data, sample_times; name="")
+function calibrate(model::AbstractPetriNet, obs_func, states_to_count, u0, p_init, training_data, sample_times, data_labels; name="")
     rxn = MakeReactionSystem(model)
 
-    tspan = (minumum(sample_times), maximum(sample_times))
+    tspan = (sample_times[1], sample_times[end])
     
     prob = ODEProblem(rxn, u0, tspan, p_init)
     
@@ -209,7 +238,7 @@ function calibrate(model::AbstractPetriNet, obs_func, u0, p_init, training_data,
     sol_estimate = Nothing
 
     for i in 1:(length(sample_times)/10):length(sample_times) # 2:8:50 # 25:25:50 # 
-        l_func = makeLossFunction(model, obs_func, prob, sample_times[i], training_data, sample_times)
+        l_func = makeLossFunction(obs_func, states_to_count, prob, sample_times[Int(floor(i))], training_data, sample_times, data_labels)
         
         res_ode = DiffEqFlux.sciml_train(l_func, p_estimate, #=ADAM(0.05), cb=callback,=# maxiters=2000, abstol=1e-4, reltol=1e-4,
             lower_bounds=repeat([1e-6], length(p_estimate)), upper_bounds=ones(length(p_estimate)))
@@ -229,13 +258,20 @@ function calibrateFromFiles(fname_mdl,fname_obs_func_and_params,fname_data)
 
     df_data = CSV.read(fname_data, DataFrame)
     obs_times = 1:length(df_data[:, :t])
-    obs_data = df_data[:,[:s,:i,:r]]
+    obs_data = df_data
+    obs_lbls = names(df_data)
 
-    p_est, sol_est, loss = calibrate(mdl, obs_func, u0, p_init, obs_data, obs_times; name="")
+    p_est, sol_est, loss = calibrate(mdl, obs_func, u0, p_init, obs_data, obs_times, obs_lbls; name="")
 
     # output p_est to file?
 
     return p_est
+end
+
+function plot_obs_w_ests(sample_times, sample_data, sol, obs_func, model::AbstractLabelledPetriNet)
+  obs_ests, obs_lbls = obs_func(sol, sample_times)
+  plot(sample_times, sample_data, seriestype=:scatter,label="")
+  plot!(sample_times,obs_ests, lw=2#=, label=obs_lbls=#)
 end
 
 # function stratifyFromFiles() end
