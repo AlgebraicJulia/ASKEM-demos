@@ -268,10 +268,10 @@ function calibrateFromFiles(fname_mdl,fname_obs_func_and_params,fname_data)
     return p_est
 end
 
-function plot_obs_w_ests(sample_times, sample_data, sol, obs_func, model::AbstractLabelledPetriNet)
+function plot_obs_w_ests(sample_times, sample_data, sol, obs_func)
   obs_ests, obs_lbls = obs_func(sol, sample_times)
   plot(sample_times, sample_data, seriestype=:scatter,label="")
-  plot!(sample_times,obs_ests, lw=2#=, label=obs_lbls=#)
+  plot!(sample_times,obs_ests, lw=2, label=reshape(map(String,obs_lbls),(1, length(obs_lbls))))
 end
 
 # function stratifyFromFiles() end
