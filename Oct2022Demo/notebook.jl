@@ -39,7 +39,7 @@ md"""### Load Disease Model from JSON"""
 mdl_disease = read_json_acset(LabelledPetriNet,"../data/SIR.json");
 
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
-# test_mdl = read_json_acset(LabelledReactionNet,"../data/SIR.json")
+test_mdl = read_json_acset(LabelledReactionNet{Any,Any},"../data/SIR.json");
 
 # ╔═╡ 0e104aa0-07c8-4870-a976-7fc6cf8c25de
 AlgebraicPetri.Graph(mdl_disease)
@@ -170,7 +170,7 @@ end;
 AlgebraicPetri.Graph(mdl_SIRD_Q)
 
 # ╔═╡ 385a2551-4733-4fb0-9d5d-9763f6757578
-md"""**SIRD-Mask Model**"""
+md"""**SIRD-Mask Model (v1 - Kris's Stratification Form)**"""
 
 # ╔═╡ 452ade8f-6140-4531-9919-51e899b15f33
 begin
@@ -196,6 +196,78 @@ end;
 
 # ╔═╡ a9043c9e-ec1b-41e8-a617-5a1a4d611415
 AlgebraicPetri.Graph(mdl_SIRD_M)
+
+# ╔═╡ 803517ca-ad26-4c3c-b003-78d8b9bdf0cc
+md"""**SIRD-Mask Model (v2 - Sophie's Stratification Form)**"""
+
+# ╔═╡ fb274f1d-fab3-4d50-ba87-c8f1cd880822
+begin 
+	s, = parts(types′, :S)
+	t_interact, t_disease, t_strata = parts(types′, :T)
+	i_interact1, i_interact2, i_disease, i_strata = parts(types′, :I)
+	o_interact1, o_interact2, o_disease, o_strata = parts(types′, :O);
+end;
+
+# ╔═╡ 75d3e1cd-b951-4626-9625-9ef1c546ef87
+begin 
+	SIRD_aug = LabelledPetriNet([:S, :I, :R, :D],
+	  :inf => ((:S, :I)=>(:I, :I)),
+	  :rec => (:I=>:R),
+	  :death => (:I=>:D),
+	  :id => (:S => :S),
+	  :id => (:I => :I),
+	  :id => (:R => :R)
+	#  :id => (:D => :D)
+	)
+	
+	SIRD_aug_typed = ACSetTransformation(SIRD_aug, types,
+	  S = [s, s, s, s],
+	  T = [t_interact, t_disease, t_disease, t_strata, t_strata, t_strata],
+	  I = [i_interact1, i_interact2, i_disease, i_disease, i_strata, i_strata, i_strata],
+	  O = [o_interact1, o_interact2, o_disease, o_disease, o_strata, o_strata, o_strata],
+	  Name = name -> nothing # specify the mapping for the loose ACSet transform
+	)
+	
+	@assert is_natural(SIRD_aug_typed)
+end;
+
+# ╔═╡ c0458439-2af8-4e42-90c7-41f562d0750e
+AlgebraicPetri.Graph(dom(SIRD_aug_typed)) # Graph_typed
+
+# ╔═╡ 488e5c05-39ee-4635-9346-730bea5aa5f5
+begin
+	Mask_aug = LabelledPetriNet([:M,:NM],
+    	:mu_infect => ((:M,:NM)=>(:M,:NM)),
+		:uu_infect => ((:NM,:NM)=>(:NM,:NM)),
+	  	:mask => ((:NM)=>(:M)),
+    	:unmask => ((:M)=>(:NM)),
+		:id => (:M => :M),
+	  	:id => (:NM => :NM)
+	)
+	
+	Mask_aug_typed = ACSetTransformation(Mask_aug, types,
+	  S = [s, s],
+	  T = [t_interact, t_interact, t_strata, t_strata, t_disease, t_disease],
+	  I = [i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_strata, i_disease, i_disease],
+	  O = [o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_strata, o_disease, o_disease],
+	  Name = name -> nothing # specify the mapping for the loose ACSet transform
+	)
+
+	@assert is_natural(Mask_aug_typed)
+end;
+
+# ╔═╡ ece17ed4-dc74-4bfc-b440-6f34cd560cab
+AlgebraicPetri.Graph(dom(Mask_aug_typed)) # Graph_typed
+
+# ╔═╡ 06636e60-e7dc-43ee-8541-190881085d16
+begin
+	typed_stratify(typed_model1, typed_model2) =
+		Theories.compose(proj1(CategoricalAlgebra.pullback(typed_model1, typed_model2)), typed_model1)
+	mdl2_SIRD_M = typed_stratify(SIRD_aug_typed, Mask_aug_typed)
+end;
+
+# ╔═╡ 03ad5137-c6f7-424d-99fb-65ac7f8a2ed2
+AlgebraicPetri.Graph(dom(mdl2_SIRD_M)) # Graph_typed
 
 # ╔═╡ d9fd32c2-ed42-4af6-90a7-d144296e222d
 md"""**SIRD-Two-CityModel**"""
@@ -307,6 +379,14 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╠═e79d741f-702d-49c9-9e1a-6442cfeb7614
 # ╠═c33580a9-1d22-42a5-b527-018c2448b209
 # ╠═a9043c9e-ec1b-41e8-a617-5a1a4d611415
+# ╟─803517ca-ad26-4c3c-b003-78d8b9bdf0cc
+# ╠═fb274f1d-fab3-4d50-ba87-c8f1cd880822
+# ╠═75d3e1cd-b951-4626-9625-9ef1c546ef87
+# ╠═c0458439-2af8-4e42-90c7-41f562d0750e
+# ╠═488e5c05-39ee-4635-9346-730bea5aa5f5
+# ╠═ece17ed4-dc74-4bfc-b440-6f34cd560cab
+# ╠═06636e60-e7dc-43ee-8541-190881085d16
+# ╠═03ad5137-c6f7-424d-99fb-65ac7f8a2ed2
 # ╟─d9fd32c2-ed42-4af6-90a7-d144296e222d
 # ╠═4c7d9df5-8f92-4fe1-a2e3-82f607d28ccb
 # ╠═25ba5ac6-9c41-4dfc-93b2-75664ea59565
