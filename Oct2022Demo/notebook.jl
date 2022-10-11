@@ -41,6 +41,9 @@ mdl_disease = read_json_acset(LabelledPetriNet,"../data/SIR.json");
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
 # test_mdl = read_json_acset(LabelledReactionNet,"../data/SIR.json")
 
+# ╔═╡ 0e104aa0-07c8-4870-a976-7fc6cf8c25de
+AlgebraicPetri.Graph(mdl_disease)
+
 # ╔═╡ 2c24347b-9c55-4e14-876a-ea8e2867eaa2
 md"""**Define Type System**"""
 
@@ -52,6 +55,9 @@ begin
     	:strata=>(:Pop=>:Pop))
 	types = map(types′, Name=name->nothing)
 end;
+
+# ╔═╡ 7c003649-03c0-4793-a673-d380e9d199ae
+AlgebraicPetri.Graph(types′)
 
 # ╔═╡ fbe5adf1-1d6b-40a6-b36e-49e3fc76057e
 md"""**Define Typed Disease Model**"""
@@ -67,15 +73,18 @@ end
 # ╔═╡ 12a51952-34ab-47a3-a318-c4f58e3f3c12
 md"""### Draw Stratification Model"""
 
-# ╔═╡ 52cc571c-7d29-4167-834c-6672bbef6edf
-md"""**Define Typed Stratification Model**"""
-
 # ╔═╡ 1561268d-bec2-4b10-8f7f-996226a38e43
 begin
 	mdl_strat = LabelledPetriNet([:Q,:NQ],
     	:quarantine => ((:NQ)=>(:Q)),
     	:unquarantine => ((:Q)=>(:NQ)));
 end;
+
+# ╔═╡ 597f6c5d-c404-4288-baf1-c892aa59deb2
+AlgebraicPetri.Graph(mdl_strat)
+
+# ╔═╡ 52cc571c-7d29-4167-834c-6672bbef6edf
+md"""**Define Typed Stratification Model**"""
 
 # ╔═╡ 5b66805c-42ef-4611-a31b-962ba3f549ed
 begin
@@ -175,6 +184,9 @@ begin
 	@assert is_natural(Mask_typed)
 end
 
+# ╔═╡ e79d741f-702d-49c9-9e1a-6442cfeb7614
+AlgebraicPetri.Graph(Mask)
+
 # ╔═╡ c33580a9-1d22-42a5-b527-018c2448b209
 begin
 	SIRD_M_ss = StrataSpec(SIRD_typed, [[:strata],[:strata],[:strata],[]])
@@ -197,6 +209,9 @@ begin
 	    initial=(T=[3,3],), type_components=(Name=x->nothing,))
 	@assert is_natural(TwoCity_typed)
 end
+
+# ╔═╡ 25ba5ac6-9c41-4dfc-93b2-75664ea59565
+AlgebraicPetri.Graph(TwoCity)
 
 # ╔═╡ 38f0c179-16b2-4c4d-9975-8fb4c3f9f97b
 begin
@@ -258,15 +273,18 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╟─4330976d-ceeb-4a75-97d0-a8375ede795b
 # ╠═80e375d8-60fc-4857-b430-9973117c5d29
 # ╠═e2c11399-7878-4602-a276-e190857b3fa6
+# ╠═0e104aa0-07c8-4870-a976-7fc6cf8c25de
 # ╟─2c24347b-9c55-4e14-876a-ea8e2867eaa2
 # ╠═f0767520-04f6-4e97-a889-cf5e45d70b4c
+# ╠═7c003649-03c0-4793-a673-d380e9d199ae
 # ╟─fbe5adf1-1d6b-40a6-b36e-49e3fc76057e
 # ╠═4c3d24e2-254e-427e-9eb5-2344c1e8406d
 # ╟─12a51952-34ab-47a3-a318-c4f58e3f3c12
-# ╟─52cc571c-7d29-4167-834c-6672bbef6edf
 # ╠═1561268d-bec2-4b10-8f7f-996226a38e43
+# ╠═597f6c5d-c404-4288-baf1-c892aa59deb2
+# ╟─52cc571c-7d29-4167-834c-6672bbef6edf
 # ╠═5b66805c-42ef-4611-a31b-962ba3f549ed
-# ╠═b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
+# ╟─b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
 # ╟─ec24996f-12f8-4d82-b210-8b23529fa73b
 # ╠═be5b29e0-acb5-4bdd-951e-26fb1150a827
 # ╟─1a35abc0-66cf-41ae-b313-7dd248cef669
@@ -275,21 +293,23 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╟─1c42f5e2-4e5c-4616-ab2d-c4d3ac877b9b
 # ╠═cbcc0224-dae5-49c3-81eb-b1d37abbd526
 # ╟─6b2b41bd-ea99-4917-8eec-d6963243f35a
-# ╠═1a5c2273-a1d1-44a4-a312-db8e9cd3c7de
+# ╟─1a5c2273-a1d1-44a4-a312-db8e9cd3c7de
 # ╠═44328cee-fbf9-42db-afeb-7fc48815952e
 # ╠═84fec776-b42c-4066-ad45-624b1eb93460
 # ╠═d482440e-2cce-4f3d-b4cb-208861a71187
-# ╠═f7d18d80-f2a6-474c-8115-f323e09637d8
+# ╟─f7d18d80-f2a6-474c-8115-f323e09637d8
 # ╠═c4f93cf2-9b30-44b2-9b7a-beee37686f37
 # ╠═3c922e81-61af-4789-b2f4-e96dd981810f
 # ╠═cc4d55cc-3ad1-47ed-9755-2ef3c616bf57
 # ╠═0de945ad-093d-4975-8e48-a0748e2414b1
-# ╠═385a2551-4733-4fb0-9d5d-9763f6757578
+# ╟─385a2551-4733-4fb0-9d5d-9763f6757578
 # ╠═452ade8f-6140-4531-9919-51e899b15f33
+# ╠═e79d741f-702d-49c9-9e1a-6442cfeb7614
 # ╠═c33580a9-1d22-42a5-b527-018c2448b209
 # ╠═a9043c9e-ec1b-41e8-a617-5a1a4d611415
-# ╠═d9fd32c2-ed42-4af6-90a7-d144296e222d
+# ╟─d9fd32c2-ed42-4af6-90a7-d144296e222d
 # ╠═4c7d9df5-8f92-4fe1-a2e3-82f607d28ccb
+# ╠═25ba5ac6-9c41-4dfc-93b2-75664ea59565
 # ╠═38f0c179-16b2-4c4d-9975-8fb4c3f9f97b
 # ╠═015fa0fd-5e9f-469a-bbb8-c388b946b3ab
 # ╟─cfc6c757-8893-4d9c-add8-4fd6906ae156
