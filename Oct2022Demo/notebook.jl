@@ -107,7 +107,7 @@ begin
 	input_rates = deepcopy(mdl_disease_mira[:rate])
 	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
 	filled_rates = input_rates
-	filled_rates[map(isnothing,input_rates)] = repeat([min_rate],sum(map(isnothing,input_rates)))
+	filled_rates[map(isnothing,input_rates)] = repeat([0.1],sum(map(isnothing,input_rates)))
 end;
 
 # ╔═╡ 72eb264f-061b-4360-a5bd-a12633f33a34
@@ -122,7 +122,11 @@ end;
 md"""**Form Labelled Reaction Net**"""
 
 # ╔═╡ 6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
-mdl_disease_rxnet = copy_parts!(LabelledReactionNet{Any,Any}(),mdl_disease_mira)
+begin
+	mdl_disease_rxnet = LabelledReactionNet{Any,Any}()
+	copy_parts!(mdl_disease_rxnet,mdl_disease_mira)
+	mdl_disease_rxnet
+end
 
 # ╔═╡ 7c16526d-7d9b-466a-b8de-6dc2e9c7a74f
 mdl_disease_rxnet[:sname]
@@ -441,7 +445,7 @@ md"""**Estimated Observations**"""
 md"""## Elaborate Model"""
 
 # ╔═╡ d512194b-6811-4433-9383-ccc9d78463f9
-Elaborate = LabelledPetriNet([:S, :E, :I, :A, :SQ, :H, :R, :EQ, :D],
+#=Elaborate = LabelledPetriNet([:S, :E, :I, :A, :SQ, :H, :R, :EQ, :D],
 	:expos_a => ((:S,:A) => (:E,:A)),
 	:spook_sa => ((:S,:A)=>(:SQ,:A)),
 	:unspook_s => (:SQ=>:S),
@@ -460,10 +464,16 @@ Elaborate = LabelledPetriNet([:S, :E, :I, :A, :SQ, :H, :R, :EQ, :D],
 	:expos_i => ((:S,:I) => (:E,:I)),
 	:spook_si => ((:S,:I)=>(:SQ,:I)),
 	:espook_i => ((:S,:I)=>(:EQ,:I))
-);
+);=#
+
+# ╔═╡ 8f985d35-d601-43d8-8e66-aa035f8ee63d
+Elaborate = mdl_disease;
 
 # ╔═╡ 1408b638-47ec-4cb7-9cd2-a2fea531eb8f
 AlgebraicPetri.Graph(Elaborate)
+
+# ╔═╡ d711e132-192c-47c1-b8a0-7070aa5f55f4
+md"""**Define Observation Function**"""
 
 # ╔═╡ 394b9c92-3681-4064-b5a7-a62d83814dc7
 begin 
@@ -483,7 +493,7 @@ function sumvarsbyname(model, name, sol, sample_times)
 	idxs = statidx(model, :I)
     sample_vals = sum(sol(sample_times)[idxs,:], dims=1)
 end
-end
+end;
 
 # ╔═╡ 234195c0-ebd8-4214-af62-5c486006a814
 function obs_Elaborate(model::AbstractLabelledPetriNet, sol, sample_times)
@@ -497,27 +507,36 @@ function obs_Elaborate(model::AbstractLabelledPetriNet, sol, sample_times)
 end;
 
 # ╔═╡ 01b6524d-6b68-4dd2-8cc5-ffaf9678835a
-begin 
+#=begin 
 	Elaborate_typed = homomorphism(Elaborate, types;
     	initial=(T=[1,1,2,2,2,2,2,2,2,2,2,1,2,1,1,1],),
     	type_components=(Name=x->nothing,))
 	@assert is_natural(Elaborate_typed)
-end
+end=#
+
+# ╔═╡ c82f017c-0da4-442a-a25e-36fc5c7debfa
+Elaborate_typed = mdl_disease_typed;
 
 # ╔═╡ 973aadbd-9f19-4e17-9b7a-bb977b405d4c
-begin
+#=begin
 	Elaborate_TC_ss = StrataSpec(Elaborate_typed, 
 		[[:strata],[:strata],[:strata],[:strata],[],[],[:strata],[],[]])
 	TwoCity_Elab_ss = StrataSpec(TwoCity_typed, [[:disease,:infect], 		[:disease,:infect]])
 	mdl_Elab_TC, obs_Elab_TC = stratify(Elaborate_TC_ss, TwoCity_Elab_ss, types′);
+end;=#
+
+# ╔═╡ 5aebef7b-6041-48b0-90cc-155975667b34
+begin
+	mdl_Elab_TC = mdl_stratified 
+	obs_Elab_TC = obs_stratified
 end;
 
 # ╔═╡ c04f6eaa-3c8a-4c8e-9311-63eb2e259315
 AlgebraicPetri.Graph(mdl_Elab_TC)
 
 # ╔═╡ 26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
-function obs_Elab_TC_trunc(diseasemodel::AbstractLabelledPetriNet, sol, sample_times)
-	samples, labels = obs_Elab_TC(sol, sample_times)
+function obs_Elab_TC_trunc(obs_func, sol, sample_times)
+	samples, labels = obs_func(sol, sample_times)
 	indx(labels, l) = findall(isequal(l), labels)
 	sumsamples(l) = sum(samples[:, indx(labels, l)], dims=2)
 	i = sumsamples(:I)
@@ -529,21 +548,60 @@ function obs_Elab_TC_trunc(diseasemodel::AbstractLabelledPetriNet, sol, sample_t
     return hcat(i, h, d), labels
 end;
 
-# ╔═╡ 1928d3ef-e575-4289-9d9d-bf94070edcc2
-mdl_Elab_TC[:sname]
+# ╔═╡ d9c4102f-f8de-46e3-ab40-4a8e893a7a0c
+#=function obs_Elab_TC_trunc_old(diseasemodel::AbstractLabelledPetriNet, sol, sample_times)
+	samples, labels = obs_Elab_TC(sol, sample_times)
+	indx(labels, l) = findall(isequal(l), labels)
+	sumsamples(l) = sum(samples[:, indx(labels, l)], dims=2)
+	i = sumsamples(:I)
+	h = sumsamples(:H)
+	d = sumsamples(:D)
+	labels = [:I :H :D]
+	# labels = reshape(["I", "H", "D"],1,3)
+
+    return hcat(i, h, d), labels
+end;=#
+
+# ╔═╡ 45811f40-ed90-4155-938a-f6fd91f7030c
+begin
+	true_mdl = mdl_Elab_TC
+	# true_obs = (sol, times) -> obs_Elab_TC_trunc(obs_Elab_TC, sol, times)
+	true_obs = obs_Elab_TC
+	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+end;
+
+# ╔═╡ ec05e159-50de-439a-8063-a9add8db5599
+begin 
+	function transidx(model, name)
+		filter(parts(model, :T)) do i
+			model[i, :tname] == name
+		end
+	end
+	true_p = zeros(nt(true_mdl))
+	for ii in 1:nt(true_mdl)
+		if true_mdl[ii,:tname][1]==:strata
+			true_p[ii] = .2 # true_mdl[ii,:tname][1]
+		else 
+			true_p[ii] = filled_rates[transidx(Elaborate,true_mdl[ii,:tname][1])[1]]
+		end
+	end
+end;
 
 # ╔═╡ 1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
 begin
-	true_mdl = mdl_Elab_TC
-	true_obs = (sol, times) -> obs_Elab_TC_trunc(Elaborate, sol, times)
-	true_p = repeat(filled_rates,2)
-	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+	#true_p = repeat(filled_rates,2)
 	tspan = (0.0,250.0)
 	sample_data, sample_times, prob_real, true_sol, noiseless_data, data_labels = 		generateData(true_mdl, true_p, u0, tspan, 50, true_obs)
 end;
 
+# ╔═╡ 66d94ce5-9ca3-4597-95ca-acc0722495eb
+hcat(Elaborate[:tname],filled_rates)
+
 # ╔═╡ 5c896c1e-e229-45c2-b2db-f81ae5d80fa5
 sample_data |> size
+
+# ╔═╡ b868463a-dc90-4fa1-b3ae-bf8ff11824be
+maximum(sample_data[:,3])
 
 # ╔═╡ 35a87a6e-4c70-400f-9e94-7b48e90e536f
 plot(sample_data, labels=String.(data_labels))
@@ -553,8 +611,9 @@ true_mdl[:tname]
 
 # ╔═╡ 8956e904-e17f-4f9c-876f-8783dbd48bcd
 begin
-	states_to_count = [:S,:I,:R,:D]
-	p_init = repeat([1.0e-6], nt(true_mdl))
+	states_to_count = [:I,:H,:D]
+	# p_init = repeat([1.0e-6], nt(true_mdl))
+	p_init = true_p
 	p_est, sol_est, loss = calibrate(true_mdl, true_obs, states_to_count, u0, p_init, 	sample_data, sample_times, data_labels)
 end;
 
@@ -652,16 +711,24 @@ apex[:rate] .= *(apex[:rate][1], apex[:rate][2])
 # ╠═8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
 # ╟─1d940676-91a4-4c58-a390-9fc276d706bc
 # ╠═d512194b-6811-4433-9383-ccc9d78463f9
+# ╠═8f985d35-d601-43d8-8e66-aa035f8ee63d
 # ╠═1408b638-47ec-4cb7-9cd2-a2fea531eb8f
+# ╟─d711e132-192c-47c1-b8a0-7070aa5f55f4
 # ╠═394b9c92-3681-4064-b5a7-a62d83814dc7
 # ╠═234195c0-ebd8-4214-af62-5c486006a814
 # ╠═01b6524d-6b68-4dd2-8cc5-ffaf9678835a
+# ╠═c82f017c-0da4-442a-a25e-36fc5c7debfa
 # ╠═973aadbd-9f19-4e17-9b7a-bb977b405d4c
+# ╠═5aebef7b-6041-48b0-90cc-155975667b34
 # ╠═c04f6eaa-3c8a-4c8e-9311-63eb2e259315
 # ╠═26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
-# ╠═1928d3ef-e575-4289-9d9d-bf94070edcc2
+# ╠═d9c4102f-f8de-46e3-ab40-4a8e893a7a0c
+# ╠═45811f40-ed90-4155-938a-f6fd91f7030c
+# ╠═ec05e159-50de-439a-8063-a9add8db5599
 # ╠═1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+# ╠═66d94ce5-9ca3-4597-95ca-acc0722495eb
 # ╠═5c896c1e-e229-45c2-b2db-f81ae5d80fa5
+# ╠═b868463a-dc90-4fa1-b3ae-bf8ff11824be
 # ╠═35a87a6e-4c70-400f-9e94-7b48e90e536f
 # ╠═4cdc078f-ee7a-4c05-aaeb-041ac4b85f74
 # ╠═8956e904-e17f-4f9c-876f-8783dbd48bcd

@@ -95,6 +95,26 @@ function add_cross_terms(ss::StrataSpec, type_system)
                         type_components=(Name=x->nothing,),)
 end
   
+function add_cross_terms_with_rates(ss::StrataSpec, type_system)
+  typed_pn = deepcopy(ss.tpn)
+  crossterms = deepcopy(ss.tlist)
+  pn = dom(typed_pn)
+  type_comps = Dict([k=>collect(v) for (k,v) in pairs(components(typed_pn))])
+  for (s_i,cts) in enumerate(crossterms)
+    for ct in cts 
+      type_ind = findfirst(==(ct), type_system[:tname])
+      is, os = [incident(type_system, type_ind, f) for f in [:it, :ot]]
+      new_t = isa(pn, LabelledReactionNet) ? add_part!(pn, :T; tname=ct, rate=1.0) : add_part!(pn, :T; tname=ct)
+      add_parts!(pn, :I, length(is); is=s_i, it=new_t)
+      add_parts!(pn, :O, length(os); os=s_i, ot=new_t)
+      push!(type_comps[:T], type_ind)
+      append!(type_comps[:I], is); append!(type_comps[:O], os); 
+    end
+  end
+  return homomorphism(pn, codom(typed_pn); initial=type_comps, 
+                        type_components=(Name=x->nothing,Rate=x->nothing, Concentration=x->nothing),)
+end
+
 """Add cross terms before taking pullback"""
 function stratify_span(ss1, ss2, type_system)
   #type_system = codom(ss1.tpn)
