@@ -36,10 +36,41 @@ md"""## Model Stratification"""
 md"""### Load Disease Model from JSON"""
 
 # ╔═╡ 80e375d8-60fc-4857-b430-9973117c5d29
-mdl_disease = read_json_acset(LabelledPetriNet,"../data/SIR.json");
+mdl_disease_w_rates = read_json_acset(LabelledReactionNet{Any,Any},"../data/SIR.json");
+
+# ╔═╡ 67264e96-d893-4f97-b433-ec24cd14d8ef
+mdl_disease = LabelledPetriNet(mdl_disease_w_rates);
+
+# ╔═╡ 16b30192-343e-49f9-b9a8-fd83ea0e49de
+
+
+# ╔═╡ c7a6ed94-e97a-4a96-8f07-1370e71038b9
+begin
+	@present TheoryMIRANet <: TheoryLabelledReactionNet begin
+    	MID::AttrType
+    	MCTX::AttrType
+    	Template::AttrType
+    	mira_ids::Attr(S, MID)
+    	mira_context::Attr(S, MCTX)
+    	template_type::Attr(T, Template)
+    	parameter_name::Attr(T, Name)
+    	# parameter_value::Attr(T, Rate)
+	end
+	@abstract_acset_type AbstractMIRANet <: AbstractLabelledReactionNet
+	@acset_type MIRANet(TheoryMIRANet) <: AbstractMIRANet
+end
 
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
-test_mdl = read_json_acset(LabelledReactionNet{Any,Any},"../data/SIR.json");
+test_mdl = read_json_acset(MIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri.json")
+
+# ╔═╡ f97a4dc0-9d74-4e93-8f57-962cde43af61
+map(isnothing,test_mdl[:rate])
+
+# ╔═╡ adf0fdc7-f420-490f-be36-afb69f2bf075
+test_mdl2 = LabelledPetriNet(test_mdl)
+
+# ╔═╡ 8b1d5f50-e4da-4f22-95b4-f78008839c14
+LabelledReactionNet{Any,Any}()
 
 # ╔═╡ 0e104aa0-07c8-4870-a976-7fc6cf8c25de
 AlgebraicPetri.Graph(mdl_disease)
@@ -55,6 +86,9 @@ begin
     	:strata=>(:Pop=>:Pop))
 	types = map(types′, Name=name->nothing)
 end;
+
+# ╔═╡ 0ec865aa-3366-4ecb-bcbc-347689437ebd
+types(MIRANet[:tname])
 
 # ╔═╡ 7c003649-03c0-4793-a673-d380e9d199ae
 AlgebraicPetri.Graph(types′)
@@ -73,11 +107,11 @@ end
 # ╔═╡ 12a51952-34ab-47a3-a318-c4f58e3f3c12
 md"""### Draw Stratification Model"""
 
-# ╔═╡ 1561268d-bec2-4b10-8f7f-996226a38e43
+# ╔═╡ 2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
 begin
-	mdl_strat = LabelledPetriNet([:Q,:NQ],
-    	:quarantine => ((:NQ)=>(:Q)),
-    	:unquarantine => ((:Q)=>(:NQ)));
+	mdl_strat = LabelledPetriNet([:City1,:City2],
+	    :travel12 => ((:City1)=>(:City2)),
+    	:travel21 => ((:City2)=>(:City1)))
 end;
 
 # ╔═╡ 597f6c5d-c404-4288-baf1-c892aa59deb2
@@ -102,7 +136,7 @@ md"""**Specify Stratification Structure**"""
 # ╔═╡ be5b29e0-acb5-4bdd-951e-26fb1150a827
 begin
 	disease_ss = StrataSpec(mdl_disease_typed, [[:strata],[:strata],[:strata],[]])
-	strat_ss = StrataSpec(mdl_strat_typed, [[:disease], [:disease,:infect]])
+	strat_ss = StrataSpec(mdl_strat_typed, [[:disease,:infect], [:disease,:infect]])
 end;
 
 # ╔═╡ 1a35abc0-66cf-41ae-b313-7dd248cef669
@@ -302,7 +336,7 @@ md"""## Model Calibration"""
 md"""### Generate Data"""
 
 # ╔═╡ 157be78c-c73f-484b-b944-a733f811457a
-begin
+#=begin
 	true_mdl = mdl_SIRD_Q
 	true_obs = obsSIRD_Q
 	true_p = [5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4,
@@ -310,17 +344,17 @@ begin
 	u0 = [0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0] 
 	tspan = (0.0,250.0)
 	sample_data, sample_times, prob_real, true_sol, noiseless_data, data_labels = 		generateData(true_mdl, true_p, u0, tspan, 50, true_obs)
-end;
+end;=#
 
 # ╔═╡ 13f557c7-9002-4a2d-8be5-fccef5aa9dc6
 md"""### Calibrate"""
 
 # ╔═╡ 3b8954ae-2959-4ced-bdd2-1381121eb6c9
-begin
+#=begin
 	states_to_count = [:S,:I,:R,:D]
 	p_init = repeat([1.0e-6], nt(true_mdl))
 	p_est, sol_est, loss = calibrate(true_mdl, true_obs, states_to_count, u0, p_init, 	sample_data, sample_times, data_labels)
-end;
+end;=#
 
 # ╔═╡ 2276bfa9-c6bd-4c54-a6e1-7a88fd7a7762
 md"""### Results"""
@@ -329,12 +363,106 @@ md"""### Results"""
 md"""**Estimated Parameters**"""
 
 # ╔═╡ ef69c329-9e2d-444a-8fa5-447f15b419b1
-hcat(true_mdl[:tname],p_est)
+# hcat(true_mdl[:tname],p_est)
 
 # ╔═╡ 60408568-5762-43aa-9fef-b10a8c903422
 md"""**Estimated Observations**"""
 
 # ╔═╡ 8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
+# plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
+
+# ╔═╡ 1d940676-91a4-4c58-a390-9fc276d706bc
+md"""## Elaborate Model"""
+
+# ╔═╡ d512194b-6811-4433-9383-ccc9d78463f9
+Elaborate = LabelledPetriNet([:S, :E, :I, :A, :SQ, :H, :R, :EQ, :D],
+	:expos_a => ((:S,:A) => (:E,:A)),
+	:spook_sa => ((:S,:A)=>(:SQ,:A)),
+	:unspook_s => (:SQ=>:S),
+	:prog_ei => (:E=>:I),
+	:prog_ea => (:E=>:A),
+	:hosp_i => (:I=>:H),
+	:recov_i => (:I=>:R),
+	:recov_a => (:A=>:R),
+	:recov_h => (:H=>:R),
+	:death_i => (:I=>:D),
+	:death_h => (:H=>:D),	
+	:espook_a => ((:S,:A)=>(:EQ,:A)),
+	:hosp_eq => (:EQ=>:H),
+	#:spook_ea => ((:E,:A)=>(:EQ,:A)),
+	#:spook_ei => ((:E,:I)=>(:EQ,:I)),	
+	:expos_i => ((:S,:I) => (:E,:I)),
+	:spook_si => ((:S,:I)=>(:SQ,:I)),
+	:espook_i => ((:S,:I)=>(:EQ,:I))
+);
+
+# ╔═╡ 1408b638-47ec-4cb7-9cd2-a2fea531eb8f
+AlgebraicPetri.Graph(Elaborate)
+
+# ╔═╡ 394b9c92-3681-4064-b5a7-a62d83814dc7
+length(Elaborate[:tname])
+
+# ╔═╡ 234195c0-ebd8-4214-af62-5c486006a814
+function obs_Elaborate(model::AbstractLabelledPetriNet, sol, sample_times)
+    inf_sample_vals = sol(sample_times)[model[:sname]=="I",:]
+    hosp_sample_vals = sol(sample_times)[get_susceptible_states(model),:]
+    dead_sample_vals = sol(sample_times)[get_dead_states(model),:]
+    
+    labels = reshape(["I", "H", "D"],1,3)
+
+    return hcat(inf_sample_vals, hosp_sample_vals, dead_sample_vals), labels
+end
+
+# ╔═╡ 01b6524d-6b68-4dd2-8cc5-ffaf9678835a
+begin 
+	Elaborate_typed = homomorphism(Elaborate, types;
+    	initial=(T=[1,1,2,2,2,2,2,2,2,2,2,1,2,1,1,1],),
+    	type_components=(Name=x->nothing,))
+	@assert is_natural(Elaborate_typed)
+end
+
+# ╔═╡ 973aadbd-9f19-4e17-9b7a-bb977b405d4c
+begin
+	Elaborate_TC_ss = StrataSpec(Elaborate_typed, 
+		[[:strata],[:strata],[:strata],[:strata],[],[],[:strata],[],[]])
+	TwoCity_Elab_ss = StrataSpec(TwoCity_typed, [[:disease,:infect], 		[:disease,:infect]])
+	mdl_Elab_TC, obs_Elab_TC = stratify(Elaborate_TC_ss, TwoCity_Elab_ss, types′);
+end;
+
+# ╔═╡ c04f6eaa-3c8a-4c8e-9311-63eb2e259315
+AlgebraicPetri.Graph(mdl_Elab_TC)
+
+# ╔═╡ 1928d3ef-e575-4289-9d9d-bf94070edcc2
+mdl_Elab_TC[:sname]
+
+# ╔═╡ 1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+begin
+	true_mdl = mdl_Elab_TC
+	true_obs = obs_Elab_TC
+	input_rates = test_mdl[:rate]
+	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
+	filled_rates = input_rates
+	filled_rates[map(isnothing,input_rates)] = 		  repeat([min_rate],sum(map(isnothing,input_rates)))
+	true_p = repeat(filled_rates,2)
+	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+	tspan = (0.0,250.0)
+	sample_data, sample_times, prob_real, true_sol, noiseless_data, data_labels = 		generateData(true_mdl, true_p, u0, tspan, 50, true_obs)
+end;
+
+# ╔═╡ 4cdc078f-ee7a-4c05-aaeb-041ac4b85f74
+true_mdl[:tname]
+
+# ╔═╡ 8956e904-e17f-4f9c-876f-8783dbd48bcd
+begin
+	states_to_count = [:S,:I,:R,:D]
+	p_init = repeat([1.0e-6], nt(true_mdl))
+	p_est, sol_est, loss = calibrate(true_mdl, true_obs, states_to_count, u0, p_init, 	sample_data, sample_times, data_labels)
+end;
+
+# ╔═╡ dcaf7bd1-c692-4067-a57c-d32f244a3054
+hcat(true_mdl[:tname],p_est)
+
+# ╔═╡ 4d0e2692-cd10-455b-9030-7b59046504a9
 plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 
 # ╔═╡ Cell order:
@@ -344,7 +472,14 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╟─287a44bb-e4d9-4a8b-b383-13d9c01e6e1e
 # ╟─4330976d-ceeb-4a75-97d0-a8375ede795b
 # ╠═80e375d8-60fc-4857-b430-9973117c5d29
+# ╠═67264e96-d893-4f97-b433-ec24cd14d8ef
+# ╠═16b30192-343e-49f9-b9a8-fd83ea0e49de
+# ╠═c7a6ed94-e97a-4a96-8f07-1370e71038b9
 # ╠═e2c11399-7878-4602-a276-e190857b3fa6
+# ╠═f97a4dc0-9d74-4e93-8f57-962cde43af61
+# ╠═0ec865aa-3366-4ecb-bcbc-347689437ebd
+# ╠═adf0fdc7-f420-490f-be36-afb69f2bf075
+# ╠═8b1d5f50-e4da-4f22-95b4-f78008839c14
 # ╠═0e104aa0-07c8-4870-a976-7fc6cf8c25de
 # ╟─2c24347b-9c55-4e14-876a-ea8e2867eaa2
 # ╠═f0767520-04f6-4e97-a889-cf5e45d70b4c
@@ -352,7 +487,7 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╟─fbe5adf1-1d6b-40a6-b36e-49e3fc76057e
 # ╠═4c3d24e2-254e-427e-9eb5-2344c1e8406d
 # ╟─12a51952-34ab-47a3-a318-c4f58e3f3c12
-# ╠═1561268d-bec2-4b10-8f7f-996226a38e43
+# ╠═2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
 # ╠═597f6c5d-c404-4288-baf1-c892aa59deb2
 # ╟─52cc571c-7d29-4167-834c-6672bbef6edf
 # ╠═5b66805c-42ef-4611-a31b-962ba3f549ed
@@ -402,3 +537,17 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╠═ef69c329-9e2d-444a-8fa5-447f15b419b1
 # ╟─60408568-5762-43aa-9fef-b10a8c903422
 # ╠═8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
+# ╟─1d940676-91a4-4c58-a390-9fc276d706bc
+# ╠═d512194b-6811-4433-9383-ccc9d78463f9
+# ╠═1408b638-47ec-4cb7-9cd2-a2fea531eb8f
+# ╠═394b9c92-3681-4064-b5a7-a62d83814dc7
+# ╠═234195c0-ebd8-4214-af62-5c486006a814
+# ╠═01b6524d-6b68-4dd2-8cc5-ffaf9678835a
+# ╠═973aadbd-9f19-4e17-9b7a-bb977b405d4c
+# ╠═c04f6eaa-3c8a-4c8e-9311-63eb2e259315
+# ╠═1928d3ef-e575-4289-9d9d-bf94070edcc2
+# ╠═1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+# ╠═4cdc078f-ee7a-4c05-aaeb-041ac4b85f74
+# ╠═8956e904-e17f-4f9c-876f-8783dbd48bcd
+# ╠═dcaf7bd1-c692-4067-a57c-d32f244a3054
+# ╠═4d0e2692-cd10-455b-9030-7b59046504a9
