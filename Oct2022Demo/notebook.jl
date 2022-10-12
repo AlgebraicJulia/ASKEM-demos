@@ -36,13 +36,29 @@ md"""## Model Stratification"""
 md"""### Load Disease Model from JSON"""
 
 # ╔═╡ 80e375d8-60fc-4857-b430-9973117c5d29
-mdl_disease_w_rates = read_json_acset(LabelledReactionNet{Any,Any},"../data/SIR.json");
+# mdl_disease_w_rates = read_json_acset(LabelledReactionNet{Any,Any},"../data/SIR.json");
 
 # ╔═╡ 67264e96-d893-4f97-b433-ec24cd14d8ef
-mdl_disease = LabelledPetriNet(mdl_disease_w_rates);
+# mdl_disease = LabelledPetriNet(mdl_disease_w_rates);
 
-# ╔═╡ 16b30192-343e-49f9-b9a8-fd83ea0e49de
+# ╔═╡ b650ef6c-7138-4171-9481-288654d9a480
+md"""**Form ACSet Type to Load MIRA JSON**"""
 
+# ╔═╡ 9806cc7e-f14b-453f-af9a-0c0c87e6559c
+begin
+	@present TheoryOrigMIRANet <: TheoryLabelledReactionNet begin
+    	MID::AttrType
+    	MCTX::AttrType
+    	Template::AttrType
+    	mira_ids::Attr(S, MID)
+    	mira_context::Attr(S, MCTX)
+    	template_type::Attr(T, Template)
+    	parameter_name::Attr(T, Name)
+    	parameter_value::Attr(T, Rate)
+	end
+	@abstract_acset_type AbstractOrigMIRANet <: AbstractLabelledReactionNet
+	@acset_type OrigMIRANet(TheoryOrigMIRANet) <: AbstractOrigMIRANet
+end;
 
 # ╔═╡ c7a6ed94-e97a-4a96-8f07-1370e71038b9
 begin
@@ -58,19 +74,64 @@ begin
 	end
 	@abstract_acset_type AbstractMIRANet <: AbstractLabelledReactionNet
 	@acset_type MIRANet(TheoryMIRANet) <: AbstractMIRANet
-end
+end;
+
+# ╔═╡ 02a79d90-34dc-4d6c-b2c8-388acfc5ab95
+md"""**Load and Graph Original MIRA JSON**"""
+
+# ╔═╡ 562f06ac-e2df-4040-942c-5d8494dbab4f
+mdl_orig_mira = read_json_acset(OrigMIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri_orig.json");
+
+# ╔═╡ 173f8103-edc8-44fe-a2f0-79bfbdcd78d5
+begin
+	mdl_orig_mira[:sname] .= Symbol.(mdl_orig_mira[:sname])
+	mdl_orig_mira[:tname] .= Symbol.(mdl_orig_mira[:tname])
+	mdl_orig = LabelledPetriNet(mdl_orig_mira);
+end;
+
+
+# ╔═╡ 455cbff2-c001-4427-89ee-87393d978d06
+AlgebraicPetri.Graph(mdl_orig)
+
+# ╔═╡ f0f007c1-6528-4a85-a007-b31881297f6a
+md"""**Load Disease Model from Curated MIRA JSON**"""
 
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
-test_mdl = read_json_acset(MIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri.json")
+mdl_disease_mira = read_json_acset(MIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri_curated.json");
 
-# ╔═╡ f97a4dc0-9d74-4e93-8f57-962cde43af61
-map(isnothing,test_mdl[:rate])
+# ╔═╡ a523d826-3d49-41eb-af52-849d24f0d919
+md"""**Fill Rates and Concentrations**"""
 
-# ╔═╡ adf0fdc7-f420-490f-be36-afb69f2bf075
-test_mdl2 = LabelledPetriNet(test_mdl)
+# ╔═╡ 92ba176d-e991-41fd-88bf-191645ed9c88
+begin
+	input_rates = deepcopy(mdl_disease_mira[:rate])
+	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
+	filled_rates = input_rates
+	filled_rates[map(isnothing,input_rates)] = repeat([min_rate],sum(map(isnothing,input_rates)))
+end;
 
-# ╔═╡ 8b1d5f50-e4da-4f22-95b4-f78008839c14
-LabelledReactionNet{Any,Any}()
+# ╔═╡ 72eb264f-061b-4360-a5bd-a12633f33a34
+begin
+	mdl_disease_mira[:rate] = filled_rates
+	mdl_disease_mira[:concentration] = 0.0
+	mdl_disease_mira[:sname] .= Symbol.(mdl_disease_mira[:sname])
+	mdl_disease_mira[:tname] .= Symbol.(mdl_disease_mira[:tname])
+end;
+
+# ╔═╡ a2369b71-43a6-42bf-b322-82e56da8c151
+md"""**Form Labelled Reaction Net**"""
+
+# ╔═╡ 6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
+mdl_disease_rxnet = copy_parts!(LabelledReactionNet{Any,Any}(),mdl_disease_mira)
+
+# ╔═╡ 7c16526d-7d9b-466a-b8de-6dc2e9c7a74f
+mdl_disease_rxnet[:sname]
+
+# ╔═╡ 55cb5f05-2613-48a7-b72f-9d4c94eccaee
+md"""**Form Labelled Petri Net**"""
+
+# ╔═╡ 560fda7a-4f4e-49e9-bf09-d82557286a83
+mdl_disease = LabelledPetriNet(mdl_disease_mira);
 
 # ╔═╡ 0e104aa0-07c8-4870-a976-7fc6cf8c25de
 AlgebraicPetri.Graph(mdl_disease)
@@ -87,9 +148,6 @@ begin
 	types = map(types′, Name=name->nothing)
 end;
 
-# ╔═╡ 0ec865aa-3366-4ecb-bcbc-347689437ebd
-types(MIRANet[:tname])
-
 # ╔═╡ 7c003649-03c0-4793-a673-d380e9d199ae
 AlgebraicPetri.Graph(types′)
 
@@ -97,9 +155,17 @@ AlgebraicPetri.Graph(types′)
 md"""**Define Typed Disease Model**"""
 
 # ╔═╡ 4c3d24e2-254e-427e-9eb5-2344c1e8406d
-begin 
+#=begin 
 	mdl_disease_typed = homomorphism(mdl_disease, types;
     	initial=(T=[1,2],I=[1,2,3],O=[1,2,3]),
+    	type_components=(Name=x->nothing,))
+	@assert is_natural(mdl_disease_typed)
+end=#
+
+# ╔═╡ a3eca5f4-21c0-4147-b7d0-19ba3fd7a776
+begin 
+	mdl_disease_typed = homomorphism(mdl_disease, types;
+    	initial=(T=[1,1,2,2,2,2,2,2,2,2,2,1,2,1,1,1],),
     	type_components=(Name=x->nothing,))
 	@assert is_natural(mdl_disease_typed)
 end
@@ -400,18 +466,35 @@ Elaborate = LabelledPetriNet([:S, :E, :I, :A, :SQ, :H, :R, :EQ, :D],
 AlgebraicPetri.Graph(Elaborate)
 
 # ╔═╡ 394b9c92-3681-4064-b5a7-a62d83814dc7
-length(Elaborate[:tname])
+begin 
+function stateidx(model, name)
+	filter(parts(model, :S)) do i
+		model[i, :sname] == name
+	end
+end
+
+function stateidx_stratified(model, name, dim=1)
+	filter(parts(model, :S)) do i
+		model[i, :sname][dim] == name
+	end
+end
+
+function sumvarsbyname(model, name, sol, sample_times)
+	idxs = statidx(model, :I)
+    sample_vals = sum(sol(sample_times)[idxs,:], dims=1)
+end
+end
 
 # ╔═╡ 234195c0-ebd8-4214-af62-5c486006a814
 function obs_Elaborate(model::AbstractLabelledPetriNet, sol, sample_times)
-    inf_sample_vals = sol(sample_times)[model[:sname]=="I",:]
-    hosp_sample_vals = sol(sample_times)[get_susceptible_states(model),:]
-    dead_sample_vals = sol(sample_times)[get_dead_states(model),:]
-    
+    inf_sample_vals = sumvarsbyname(model, :I, sol, sample_times)
+    hosp_sample_vals = sumvarsbyname(model, :H, sol, sample_times)
+	dead_sample_vals = sumvarsbyname(model, :D, sol, sample_times)
+	
     labels = reshape(["I", "H", "D"],1,3)
 
     return hcat(inf_sample_vals, hosp_sample_vals, dead_sample_vals), labels
-end
+end;
 
 # ╔═╡ 01b6524d-6b68-4dd2-8cc5-ffaf9678835a
 begin 
@@ -432,22 +515,38 @@ end;
 # ╔═╡ c04f6eaa-3c8a-4c8e-9311-63eb2e259315
 AlgebraicPetri.Graph(mdl_Elab_TC)
 
+# ╔═╡ 26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
+function obs_Elab_TC_trunc(diseasemodel::AbstractLabelledPetriNet, sol, sample_times)
+	samples, labels = obs_Elab_TC(sol, sample_times)
+	indx(labels, l) = findall(isequal(l), labels)
+	sumsamples(l) = sum(samples[:, indx(labels, l)], dims=2)
+	i = sumsamples(:I)
+	h = sumsamples(:H)
+	d = sumsamples(:D)
+	labels = [:I :H :D]
+	# labels = reshape(["I", "H", "D"],1,3)
+
+    return hcat(i, h, d), labels
+end;
+
 # ╔═╡ 1928d3ef-e575-4289-9d9d-bf94070edcc2
 mdl_Elab_TC[:sname]
 
 # ╔═╡ 1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
 begin
 	true_mdl = mdl_Elab_TC
-	true_obs = obs_Elab_TC
-	input_rates = test_mdl[:rate]
-	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
-	filled_rates = input_rates
-	filled_rates[map(isnothing,input_rates)] = 		  repeat([min_rate],sum(map(isnothing,input_rates)))
+	true_obs = (sol, times) -> obs_Elab_TC_trunc(Elaborate, sol, times)
 	true_p = repeat(filled_rates,2)
 	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
 	tspan = (0.0,250.0)
 	sample_data, sample_times, prob_real, true_sol, noiseless_data, data_labels = 		generateData(true_mdl, true_p, u0, tspan, 50, true_obs)
 end;
+
+# ╔═╡ 5c896c1e-e229-45c2-b2db-f81ae5d80fa5
+sample_data |> size
+
+# ╔═╡ 35a87a6e-4c70-400f-9e94-7b48e90e536f
+plot(sample_data, labels=String.(data_labels))
 
 # ╔═╡ 4cdc078f-ee7a-4c05-aaeb-041ac4b85f74
 true_mdl[:tname]
@@ -465,27 +564,41 @@ hcat(true_mdl[:tname],p_est)
 # ╔═╡ 4d0e2692-cd10-455b-9030-7b59046504a9
 plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 
+# ╔═╡ f7664021-998c-403b-bf73-c5bec585854f
+apex[:rate] .= *(apex[:rate][1], apex[:rate][2])
+
 # ╔═╡ Cell order:
 # ╠═915f4df0-bc3a-11ec-2560-c9772e143679
 # ╠═60d7decb-a7fa-494e-93ca-26d8b957cfcf
 # ╠═aad0407a-4979-4ea4-94d3-38f1bb6d3de1
 # ╟─287a44bb-e4d9-4a8b-b383-13d9c01e6e1e
 # ╟─4330976d-ceeb-4a75-97d0-a8375ede795b
-# ╠═80e375d8-60fc-4857-b430-9973117c5d29
-# ╠═67264e96-d893-4f97-b433-ec24cd14d8ef
-# ╠═16b30192-343e-49f9-b9a8-fd83ea0e49de
+# ╟─80e375d8-60fc-4857-b430-9973117c5d29
+# ╟─67264e96-d893-4f97-b433-ec24cd14d8ef
+# ╟─b650ef6c-7138-4171-9481-288654d9a480
+# ╠═9806cc7e-f14b-453f-af9a-0c0c87e6559c
 # ╠═c7a6ed94-e97a-4a96-8f07-1370e71038b9
+# ╟─02a79d90-34dc-4d6c-b2c8-388acfc5ab95
+# ╠═562f06ac-e2df-4040-942c-5d8494dbab4f
+# ╠═173f8103-edc8-44fe-a2f0-79bfbdcd78d5
+# ╠═455cbff2-c001-4427-89ee-87393d978d06
+# ╟─f0f007c1-6528-4a85-a007-b31881297f6a
 # ╠═e2c11399-7878-4602-a276-e190857b3fa6
-# ╠═f97a4dc0-9d74-4e93-8f57-962cde43af61
-# ╠═0ec865aa-3366-4ecb-bcbc-347689437ebd
-# ╠═adf0fdc7-f420-490f-be36-afb69f2bf075
-# ╠═8b1d5f50-e4da-4f22-95b4-f78008839c14
+# ╟─a523d826-3d49-41eb-af52-849d24f0d919
+# ╠═92ba176d-e991-41fd-88bf-191645ed9c88
+# ╠═72eb264f-061b-4360-a5bd-a12633f33a34
+# ╟─a2369b71-43a6-42bf-b322-82e56da8c151
+# ╠═6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
+# ╠═7c16526d-7d9b-466a-b8de-6dc2e9c7a74f
+# ╟─55cb5f05-2613-48a7-b72f-9d4c94eccaee
+# ╠═560fda7a-4f4e-49e9-bf09-d82557286a83
 # ╠═0e104aa0-07c8-4870-a976-7fc6cf8c25de
 # ╟─2c24347b-9c55-4e14-876a-ea8e2867eaa2
 # ╠═f0767520-04f6-4e97-a889-cf5e45d70b4c
 # ╠═7c003649-03c0-4793-a673-d380e9d199ae
 # ╟─fbe5adf1-1d6b-40a6-b36e-49e3fc76057e
-# ╠═4c3d24e2-254e-427e-9eb5-2344c1e8406d
+# ╟─4c3d24e2-254e-427e-9eb5-2344c1e8406d
+# ╠═a3eca5f4-21c0-4147-b7d0-19ba3fd7a776
 # ╟─12a51952-34ab-47a3-a318-c4f58e3f3c12
 # ╠═2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
 # ╠═597f6c5d-c404-4288-baf1-c892aa59deb2
@@ -545,9 +658,13 @@ plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 # ╠═01b6524d-6b68-4dd2-8cc5-ffaf9678835a
 # ╠═973aadbd-9f19-4e17-9b7a-bb977b405d4c
 # ╠═c04f6eaa-3c8a-4c8e-9311-63eb2e259315
+# ╠═26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
 # ╠═1928d3ef-e575-4289-9d9d-bf94070edcc2
 # ╠═1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+# ╠═5c896c1e-e229-45c2-b2db-f81ae5d80fa5
+# ╠═35a87a6e-4c70-400f-9e94-7b48e90e536f
 # ╠═4cdc078f-ee7a-4c05-aaeb-041ac4b85f74
 # ╠═8956e904-e17f-4f9c-876f-8783dbd48bcd
 # ╠═dcaf7bd1-c692-4067-a57c-d32f244a3054
 # ╠═4d0e2692-cd10-455b-9030-7b59046504a9
+# ╠═f7664021-998c-403b-bf73-c5bec585854f
