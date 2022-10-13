@@ -294,6 +294,27 @@ function plot_obs_w_ests(sample_times, sample_data, sol, obs_func)
   plot!(sample_times,obs_ests, lw=2, label=reshape(map(String,obs_lbls),(1, length(obs_lbls))))
 end
 
+function load_mira(fname)
+  mdl_orig_mira = read_json_acset(OrigMIRANet{Any,Any,Any,Any,Any,Any}, fname)
+  mdl_orig_mira[:sname] .= Symbol.(mdl_orig_mira[:sname])
+  mdl_orig_mira[:tname] .= Symbol.(mdl_orig_mira[:tname])
+  mdl_orig = LabelledPetriNet(mdl_orig_mira);
+  return mdl_orig
+end
+
+function load_mira_curated(fname, fillrate=1.0)
+  mdl_disease_mira = read_json_acset(MIRANet{Any,Any,Any,Any,Any,Any}, fname)
+  input_rates = deepcopy(mdl_disease_mira[:rate])
+	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
+  filled_rates = input_rates
+  filled_rates[map(isnothing,input_rates)] = repeat([0.1],sum(map(isnothing,input_rates)))
+  mdl_disease_mira[:rate] = filled_rates
+  mdl_disease_mira[:concentration] = 0.0
+  mdl_disease_mira[:sname] .= Symbol.(mdl_disease_mira[:sname])
+  mdl_disease_mira[:tname] .= Symbol.(mdl_disease_mira[:tname])
+  return mdl_disease_mira
+end
+
 # function stratifyFromFiles() end
 # function testCalibrateFromFiles() end
 # function testStratifyFromFiles() end
