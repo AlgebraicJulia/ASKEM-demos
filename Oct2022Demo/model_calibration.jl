@@ -1,18 +1,8 @@
 ### A Pluto.jl notebook ###
-# v0.19.13
+# v0.19.12
 
 using Markdown
 using InteractiveUtils
-
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
 
 # ╔═╡ 915f4df0-bc3a-11ec-2560-c9772e143679
 begin 
@@ -23,7 +13,10 @@ begin
 	using Catlab.Present, Catlab.Theories
 	using AlgebraicPetri
 	using AlgebraicPetri: Graph
-	using Semagrams
+    # using ModelExploration.Explore
+	using Plots
+	# using Test
+
 end;
 
 # ╔═╡ aad0407a-4979-4ea4-94d3-38f1bb6d3de1
@@ -34,7 +27,7 @@ begin
 end;
 
 # ╔═╡ 60d7decb-a7fa-494e-93ca-26d8b957cfcf
-include("lib_stratify.jl");
+include("Oct2022Demo.jl");
 
 # ╔═╡ 287a44bb-e4d9-4a8b-b383-13d9c01e6e1e
 md"""## Model Stratification"""
@@ -195,12 +188,31 @@ md"""### Draw Stratification Model"""
 # ╔═╡ c89f40f2-3aa9-45c0-9cc8-0abf0a67564f
 md"""Here we use `Semagrams.jl` to form the stratification model.""" 
 
+# ╔═╡ 67fd498c-0460-4673-a2f7-ff45f824be3a
+md"""As an example, we choose a Two-City movement model with states `:City1` and `:City2` and transitions `:travel12` and `:travel21`."""
+
 # ╔═╡ 2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
-@bind mdl_strat_sema Semagram{StratPetri}(
-	"https://semagrams-builds.s3.amazonaws.com/00b3527/petri/main.js",
-	"Petri",
-	strat_petri_decoders
-)
+begin
+	mdl_strat = LabelledPetriNet([:City1,:City2],
+	    :travel12 => ((:City1)=>(:City2)),
+    	:travel21 => ((:City2)=>(:City1)))
+end;
+
+# ╔═╡ 597f6c5d-c404-4288-baf1-c892aa59deb2
+AlgebraicPetri.Graph(mdl_strat)
+
+# ╔═╡ 52cc571c-7d29-4167-834c-6672bbef6edf
+md"""**Define Typed Stratification Model**"""
+
+# ╔═╡ f311a863-7580-49ca-8200-d6f053e5118e
+md"""As with the disease model, we specify the typing of the stratification model. Here the two transitions are of type strata."""
+
+# ╔═╡ 5b66805c-42ef-4611-a31b-962ba3f549ed
+begin
+	mdl_strat_typed = homomorphism(mdl_strat, types;
+    	initial=(T=[3,3],), type_components=(Name=x->nothing,))
+	@assert is_natural(mdl_strat_typed)
+end;
 
 # ╔═╡ b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
 md"""### Compute Stratified Model"""
@@ -224,7 +236,7 @@ md"""In this case, the SQ, H, EQ, and D states cannot travel between cities, but
 begin
 	disease_ss = StrataSpec(mdl_disease_typed, 
 		[[:strata],[:strata],[:strata],[:strata],[],[],[:strata],[],[]])
-	strat_ss = tostrataspec(mdl_strat_sema, types)
+	strat_ss = StrataSpec(mdl_strat_typed, [[:disease,:infect], 			[:disease,:infect]])
 end;
 
 # ╔═╡ 1a35abc0-66cf-41ae-b313-7dd248cef669
@@ -516,6 +528,210 @@ md"""Resulting in the following stratified model"""
 # ╔═╡ 015fa0fd-5e9f-469a-bbb8-c388b946b3ab
 AlgebraicPetri.Graph(mdl_SIRD_TC)
 
+# ╔═╡ cfc6c757-8893-4d9c-add8-4fd6906ae156
+md"""## Model Calibration of MIRA-Two-City"""
+
+# ╔═╡ 09444324-aa7b-4e63-af94-fa8950ece8b6
+md"""Here we simulate data from the stratified model (formed from the MIRA disease model and Semagrams city model) and fit the model to the data sample."""
+
+# ╔═╡ 1d940676-91a4-4c58-a390-9fc276d706bc
+md"""### Generate Data"""
+
+# ╔═╡ e900b657-4898-4811-aa6c-e178d693e6bf
+md"""For"""
+
+# ╔═╡ 8f985d35-d601-43d8-8e66-aa035f8ee63d
+Elaborate = mdl_disease;
+
+# ╔═╡ 1408b638-47ec-4cb7-9cd2-a2fea531eb8f
+AlgebraicPetri.Graph(Elaborate)
+
+# ╔═╡ d711e132-192c-47c1-b8a0-7070aa5f55f4
+md"""**Define Observation Function**"""
+
+# ╔═╡ 394b9c92-3681-4064-b5a7-a62d83814dc7
+begin 
+function stateidx(model, name)
+	filter(parts(model, :S)) do i
+		model[i, :sname] == name
+	end
+end
+
+function stateidx_stratified(model, name, dim=1)
+	filter(parts(model, :S)) do i
+		model[i, :sname][dim] == name
+	end
+end
+
+function sumvarsbyname(model, name, sol, sample_times)
+	idxs = statidx(model, :I)
+    sample_vals = sum(sol(sample_times)[idxs,:], dims=1)
+end
+end;
+
+# ╔═╡ 234195c0-ebd8-4214-af62-5c486006a814
+function obs_Elaborate(model::AbstractLabelledPetriNet, sol, sample_times)
+    inf_sample_vals = sumvarsbyname(model, :I, sol, sample_times)
+    hosp_sample_vals = sumvarsbyname(model, :H, sol, sample_times)
+	dead_sample_vals = sumvarsbyname(model, :D, sol, sample_times)
+	
+    labels = reshape(["I", "H", "D"],1,3)
+
+    return hcat(inf_sample_vals, hosp_sample_vals, dead_sample_vals), labels
+end;
+
+# ╔═╡ c82f017c-0da4-442a-a25e-36fc5c7debfa
+Elaborate_typed = mdl_disease_typed;
+
+# ╔═╡ 5aebef7b-6041-48b0-90cc-155975667b34
+begin
+	mdl_Elab_TC = mdl_stratified 
+	obs_Elab_TC = obs_stratified
+end;
+
+# ╔═╡ c04f6eaa-3c8a-4c8e-9311-63eb2e259315
+AlgebraicPetri.Graph(mdl_Elab_TC)
+
+# ╔═╡ 26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
+function obs_Elab_TC_trunc(obs_func, sol, sample_times)
+	samples, labels = obs_func(sol, sample_times)
+	indx(labels, l) = findall(isequal(l), labels)
+	sumsamples(l) = sum(samples[:, indx(labels, l)], dims=2)
+	i = sumsamples(:I)
+	h = sumsamples(:H)
+	d = sumsamples(:D)
+	labels = [:I :H :D]
+	# labels = reshape(["I", "H", "D"],1,3)
+
+    return hcat(i, h, d), labels
+end;
+
+# ╔═╡ 45811f40-ed90-4155-938a-f6fd91f7030c
+begin
+	true_mdl = mdl_Elab_TC
+	# true_obs = (sol, times) -> obs_Elab_TC_trunc(obs_Elab_TC, sol, times)
+	true_obs = obs_Elab_TC
+	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+end;
+
+# ╔═╡ ec05e159-50de-439a-8063-a9add8db5599
+begin 
+	function transidx(model, name)
+		filter(parts(model, :T)) do i
+			model[i, :tname] == name
+		end
+	end
+	true_p = zeros(nt(true_mdl))
+	for ii in 1:nt(true_mdl)
+		if true_mdl[ii,:tname][1]==:strata
+			true_p[ii] = .2 # true_mdl[ii,:tname][1]
+		else 
+			true_p[ii] = filled_rates[transidx(Elaborate,true_mdl[ii,:tname][1])[1]]
+		end
+	end
+end;
+
+# ╔═╡ 1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+begin
+	#true_p = repeat(filled_rates,2)
+	tspan = (0.0,250.0)
+	sample_data, sample_times, prob_real, true_sol, noiseless_data, data_labels = 		generateData(true_mdl, true_p, u0, tspan, 50, true_obs)
+end;
+
+# ╔═╡ 35a87a6e-4c70-400f-9e94-7b48e90e536f
+plot(sample_data, labels=reshape(String.(data_labels),1,length(data_labels)))
+
+# ╔═╡ 7e35a352-bc77-4eb1-9e5b-1a87fba90cc1
+md"""### Calibrate Data"""
+
+# ╔═╡ 8956e904-e17f-4f9c-876f-8783dbd48bcd
+begin
+	# states_to_count = [:I,:H,:D]
+	states_to_count = [:S,:E,:I,:A,:SQ,:H,:R,:EQ,:D]
+	# p_init = repeat([1.0e-6], nt(true_mdl))
+	p_init = true_p
+	p_est, sol_est, loss = calibrate(true_mdl, true_obs, states_to_count, u0, p_init, 	sample_data, sample_times, data_labels)
+end;
+
+# ╔═╡ fc3b4271-4ea8-4e1f-a62f-69186d4fbac8
+md"""### Results"""
+
+# ╔═╡ 50ba48db-8466-4299-967e-825ab99fba9e
+md"""**Estimated Parameters**"""
+
+# ╔═╡ dcaf7bd1-c692-4067-a57c-d32f244a3054
+hcat(true_mdl[:tname],p_est)
+
+# ╔═╡ d65328b2-34f1-4321-b7d2-0dabca98e2e2
+md"""**Estimated Observations**"""
+
+# ╔═╡ 4d0e2692-cd10-455b-9030-7b59046504a9
+plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
+
+# ╔═╡ b98eb01f-6866-4e79-9e0c-b9da3bffef5d
+md"""## Model Cablibration of SIRD-Q"""
+
+# ╔═╡ cabe7fdb-73bd-493b-80d2-0fc8f1f38be7
+md"""### Generate Data"""
+
+# ╔═╡ a4c8c53a-a275-4eb8-93c1-7499fa8b3a7c
+md"""To generate sample data from the model, we provide rate paramters, initial states, and a time span."""
+
+# ╔═╡ cb4bd531-beb6-45d8-9121-ae995a3cedb4
+md"""**Crucially**, we also need to specify an **observation function**, i.e., the function mapping the states to the observed data."""
+
+# ╔═╡ 09a5b7ff-8865-4081-b442-a306c7d45b25
+md"""There are several reasons for this:"""
+
+# ╔═╡ 4ef2e1b5-795e-40d9-922f-d7b08bf68b42
+md"""Not only is this a practical necessity, in that not , but more generally the observed data are not necessarily the states """
+
+# ╔═╡ 114de89f-0269-4941-9d03-9d4cfcfb8d83
+md"""Here we take the observation function to be the observation of the states of the component disease model, i.e., """
+
+# ╔═╡ 157be78c-c73f-484b-b944-a733f811457a
+begin
+	p_true_SIRD_Q = [5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4,
+            1.0e-2, 1.0e-5, 1.0e-3, 1.0e-5, 5.0e-5]
+	u0_SIRD_Q = [0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0] 
+	tspan_SIRD_Q = (0.0,250.0)
+	sample_data_SIRD_Q, sample_times_SIRD_Q, prob_real_SIRD_Q, true_sol_SIRD_Q, noiseless_data_SIRD_Q, data_labels_SIRD_Q = generateData(mdl_SIRD_Q, p_true_SIRD_Q, u0_SIRD_Q, tspan_SIRD_Q, 50, obsSIRD_Q)
+end;
+
+# ╔═╡ 13f557c7-9002-4a2d-8be5-fccef5aa9dc6
+md"""### Calibrate"""
+
+# ╔═╡ 7e21ce80-98fe-49e3-bfa9-a4ede6e6caba
+md"""To calibrate a model to sample data, we provide initial estimates for the rate paramters (in addition to the model and observation function)."""
+
+# ╔═╡ a2c39f9c-26b4-48a0-93a5-1aeb8af66d25
+md"""Similar to the need for specifying an observation function in the generation of data, in general, model fitting requires specifying a loss function."""
+
+# ╔═╡ 1e8d96fe-f024-4d7d-a01a-9ef38113bfe2
+
+
+# ╔═╡ 3b8954ae-2959-4ced-bdd2-1381121eb6c9
+begin
+	states_to_count_SIRD_Q = [:S,:I,:R,:D]
+	p_init_SIRD_Q = repeat([1.0e-6], nt(mdl_SIRD_Q))
+	p_est_SIRD_Q, sol_est_SIRD_Q, loss_SIRD_Q = calibrate(mdl_SIRD_Q, obsSIRD_Q, states_to_count_SIRD_Q, u0_SIRD_Q, p_init_SIRD_Q, 	sample_data_SIRD_Q, sample_times_SIRD_Q, data_labels_SIRD_Q)
+end;
+
+# ╔═╡ 2276bfa9-c6bd-4c54-a6e1-7a88fd7a7762
+md"""### Results"""
+
+# ╔═╡ 79633d27-71b4-4261-81dc-db609133e2cd
+md"""**Estimated Parameters**"""
+
+# ╔═╡ ef69c329-9e2d-444a-8fa5-447f15b419b1
+hcat(mdl_SIRD_Q[:tname],p_est_SIRD_Q)
+
+# ╔═╡ 60408568-5762-43aa-9fef-b10a8c903422
+md"""**Estimated Observations**"""
+
+# ╔═╡ 8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
+plot_obs_w_ests(sample_times_SIRD_Q, sample_data_SIRD_Q, sol_est_SIRD_Q, obsSIRD_Q)
+
 # ╔═╡ Cell order:
 # ╠═915f4df0-bc3a-11ec-2560-c9772e143679
 # ╠═60d7decb-a7fa-494e-93ca-26d8b957cfcf
@@ -553,7 +769,12 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═a3eca5f4-21c0-4147-b7d0-19ba3fd7a776
 # ╟─12a51952-34ab-47a3-a318-c4f58e3f3c12
 # ╟─c89f40f2-3aa9-45c0-9cc8-0abf0a67564f
+# ╟─67fd498c-0460-4673-a2f7-ff45f824be3a
 # ╠═2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
+# ╠═597f6c5d-c404-4288-baf1-c892aa59deb2
+# ╟─52cc571c-7d29-4167-834c-6672bbef6edf
+# ╟─f311a863-7580-49ca-8200-d6f053e5118e
+# ╠═5b66805c-42ef-4611-a31b-962ba3f549ed
 # ╟─b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
 # ╟─1185894b-063f-402f-96e2-8852430ac4d5
 # ╟─6b4584c6-dafa-466f-9879-299556a51277
@@ -627,3 +848,45 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═38f0c179-16b2-4c4d-9975-8fb4c3f9f97b
 # ╟─91ad223d-c245-4aca-89ab-cd6ee8c6652d
 # ╠═015fa0fd-5e9f-469a-bbb8-c388b946b3ab
+# ╟─cfc6c757-8893-4d9c-add8-4fd6906ae156
+# ╟─09444324-aa7b-4e63-af94-fa8950ece8b6
+# ╟─1d940676-91a4-4c58-a390-9fc276d706bc
+# ╠═e900b657-4898-4811-aa6c-e178d693e6bf
+# ╠═8f985d35-d601-43d8-8e66-aa035f8ee63d
+# ╠═1408b638-47ec-4cb7-9cd2-a2fea531eb8f
+# ╟─d711e132-192c-47c1-b8a0-7070aa5f55f4
+# ╠═394b9c92-3681-4064-b5a7-a62d83814dc7
+# ╠═234195c0-ebd8-4214-af62-5c486006a814
+# ╠═c82f017c-0da4-442a-a25e-36fc5c7debfa
+# ╠═5aebef7b-6041-48b0-90cc-155975667b34
+# ╠═c04f6eaa-3c8a-4c8e-9311-63eb2e259315
+# ╠═26f3d3ee-91ab-42f1-bc94-c8a7c689e1d2
+# ╠═45811f40-ed90-4155-938a-f6fd91f7030c
+# ╠═ec05e159-50de-439a-8063-a9add8db5599
+# ╠═1d3f03de-5b5b-4ea9-839c-a6ae67f72a22
+# ╠═35a87a6e-4c70-400f-9e94-7b48e90e536f
+# ╟─7e35a352-bc77-4eb1-9e5b-1a87fba90cc1
+# ╠═8956e904-e17f-4f9c-876f-8783dbd48bcd
+# ╟─fc3b4271-4ea8-4e1f-a62f-69186d4fbac8
+# ╟─50ba48db-8466-4299-967e-825ab99fba9e
+# ╠═dcaf7bd1-c692-4067-a57c-d32f244a3054
+# ╟─d65328b2-34f1-4321-b7d2-0dabca98e2e2
+# ╠═4d0e2692-cd10-455b-9030-7b59046504a9
+# ╟─b98eb01f-6866-4e79-9e0c-b9da3bffef5d
+# ╟─cabe7fdb-73bd-493b-80d2-0fc8f1f38be7
+# ╟─a4c8c53a-a275-4eb8-93c1-7499fa8b3a7c
+# ╠═cb4bd531-beb6-45d8-9121-ae995a3cedb4
+# ╠═09a5b7ff-8865-4081-b442-a306c7d45b25
+# ╠═4ef2e1b5-795e-40d9-922f-d7b08bf68b42
+# ╠═114de89f-0269-4941-9d03-9d4cfcfb8d83
+# ╠═157be78c-c73f-484b-b944-a733f811457a
+# ╟─13f557c7-9002-4a2d-8be5-fccef5aa9dc6
+# ╟─7e21ce80-98fe-49e3-bfa9-a4ede6e6caba
+# ╟─a2c39f9c-26b4-48a0-93a5-1aeb8af66d25
+# ╠═1e8d96fe-f024-4d7d-a01a-9ef38113bfe2
+# ╠═3b8954ae-2959-4ced-bdd2-1381121eb6c9
+# ╟─2276bfa9-c6bd-4c54-a6e1-7a88fd7a7762
+# ╟─79633d27-71b4-4261-81dc-db609133e2cd
+# ╠═ef69c329-9e2d-444a-8fa5-447f15b419b1
+# ╟─60408568-5762-43aa-9fef-b10a8c903422
+# ╠═8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
