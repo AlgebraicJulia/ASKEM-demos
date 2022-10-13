@@ -375,70 +375,6 @@ md"""**Estimated Observations**"""
 # ╔═╡ 4d0e2692-cd10-455b-9030-7b59046504a9
 plot_obs_w_ests(sample_times, sample_data, sol_est, true_obs)
 
-# ╔═╡ b98eb01f-6866-4e79-9e0c-b9da3bffef5d
-md"""## Model Cablibration of SIRD-Q"""
-
-# ╔═╡ cabe7fdb-73bd-493b-80d2-0fc8f1f38be7
-md"""### Generate Data"""
-
-# ╔═╡ a4c8c53a-a275-4eb8-93c1-7499fa8b3a7c
-md"""To generate sample data from the model, we provide rate paramters, initial states, and a time span."""
-
-# ╔═╡ cb4bd531-beb6-45d8-9121-ae995a3cedb4
-md"""**Crucially**, we also need to specify an **observation function**, i.e., the function mapping the states to the observed data."""
-
-# ╔═╡ 22192933-f60c-4de9-a445-0b077538a73a
-md"""This is necessary because, in general, not all of the states will be directly observable and/or the states may not be directly observed at all, being instead functions of some of the states."""
-
-# ╔═╡ d388e872-9b49-4983-80fd-53b207149954
-md"""In particular, to perform model comparison and selection from fits to a given dataset, each model requires its own observation function into the given observation space.""" 
-
-# ╔═╡ 114de89f-0269-4941-9d03-9d4cfcfb8d83
-md"""Here, we take the observation function to be the direct observation of the states of the component disease model, i.e., S, I, R, and D."""
-
-# ╔═╡ 157be78c-c73f-484b-b944-a733f811457a
-begin
-	p_true_SIRD_Q = [5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4, 5.0e-4,
-            1.0e-2, 1.0e-5, 1.0e-3, 1.0e-5, 5.0e-5]
-	u0_SIRD_Q = [0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0] 
-	tspan_SIRD_Q = (0.0,250.0)
-	sample_data_SIRD_Q, sample_times_SIRD_Q, prob_real_SIRD_Q, true_sol_SIRD_Q, noiseless_data_SIRD_Q, data_labels_SIRD_Q = generateData(mdl_SIRD_Q, p_true_SIRD_Q, u0_SIRD_Q, tspan_SIRD_Q, 50, obsSIRD_Q)
-end;
-
-# ╔═╡ 13f557c7-9002-4a2d-8be5-fccef5aa9dc6
-md"""### Calibrate"""
-
-# ╔═╡ 7e21ce80-98fe-49e3-bfa9-a4ede6e6caba
-md"""To calibrate a model to sample data, we provide initial estimates for the rate paramters (in addition to the model and observation function)."""
-
-# ╔═╡ a2c39f9c-26b4-48a0-93a5-1aeb8af66d25
-md"""Similar to the need for specifying an observation function in the generation of data, in general, model fitting requires specifying a loss function."""
-
-# ╔═╡ 1e8d96fe-f024-4d7d-a01a-9ef38113bfe2
-md"""Here, our calibration function offers the possibility to subselect states for inclusion in the loss evaluation. Currently, we are including all states from the disease model."""
-
-# ╔═╡ 3b8954ae-2959-4ced-bdd2-1381121eb6c9
-begin
-	states_to_count_SIRD_Q = [:S,:I,:R,:D]
-	p_init_SIRD_Q = repeat([1.0e-6], nt(mdl_SIRD_Q))
-	p_est_SIRD_Q, sol_est_SIRD_Q, loss_SIRD_Q = calibrate(mdl_SIRD_Q, obsSIRD_Q, states_to_count_SIRD_Q, u0_SIRD_Q, p_init_SIRD_Q, 	sample_data_SIRD_Q, sample_times_SIRD_Q, data_labels_SIRD_Q)
-end;
-
-# ╔═╡ 2276bfa9-c6bd-4c54-a6e1-7a88fd7a7762
-md"""### Results"""
-
-# ╔═╡ 79633d27-71b4-4261-81dc-db609133e2cd
-md"""**Estimated Parameters**"""
-
-# ╔═╡ ef69c329-9e2d-444a-8fa5-447f15b419b1
-hcat(mdl_SIRD_Q[:tname],p_est_SIRD_Q)
-
-# ╔═╡ 60408568-5762-43aa-9fef-b10a8c903422
-md"""**Estimated Observations**"""
-
-# ╔═╡ 8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
-plot_obs_w_ests(sample_times_SIRD_Q, sample_data_SIRD_Q, sol_est_SIRD_Q, obsSIRD_Q)
-
 # ╔═╡ Cell order:
 # ╠═915f4df0-bc3a-11ec-2560-c9772e143679
 # ╠═60d7decb-a7fa-494e-93ca-26d8b957cfcf
@@ -526,21 +462,3 @@ plot_obs_w_ests(sample_times_SIRD_Q, sample_data_SIRD_Q, sol_est_SIRD_Q, obsSIRD
 # ╠═dcaf7bd1-c692-4067-a57c-d32f244a3054
 # ╟─d65328b2-34f1-4321-b7d2-0dabca98e2e2
 # ╠═4d0e2692-cd10-455b-9030-7b59046504a9
-# ╟─b98eb01f-6866-4e79-9e0c-b9da3bffef5d
-# ╟─cabe7fdb-73bd-493b-80d2-0fc8f1f38be7
-# ╟─a4c8c53a-a275-4eb8-93c1-7499fa8b3a7c
-# ╟─cb4bd531-beb6-45d8-9121-ae995a3cedb4
-# ╟─22192933-f60c-4de9-a445-0b077538a73a
-# ╟─d388e872-9b49-4983-80fd-53b207149954
-# ╟─114de89f-0269-4941-9d03-9d4cfcfb8d83
-# ╠═157be78c-c73f-484b-b944-a733f811457a
-# ╟─13f557c7-9002-4a2d-8be5-fccef5aa9dc6
-# ╟─7e21ce80-98fe-49e3-bfa9-a4ede6e6caba
-# ╟─a2c39f9c-26b4-48a0-93a5-1aeb8af66d25
-# ╟─1e8d96fe-f024-4d7d-a01a-9ef38113bfe2
-# ╠═3b8954ae-2959-4ced-bdd2-1381121eb6c9
-# ╟─2276bfa9-c6bd-4c54-a6e1-7a88fd7a7762
-# ╟─79633d27-71b4-4261-81dc-db609133e2cd
-# ╠═ef69c329-9e2d-444a-8fa5-447f15b419b1
-# ╟─60408568-5762-43aa-9fef-b10a8c903422
-# ╠═8f1bfc19-0c0d-4ac9-a16a-fb56555f6707
