@@ -64,26 +64,29 @@ begin
 	@acset_type OrigMIRANet(TheoryOrigMIRANet) <: AbstractOrigMIRANet
 end;
 
+# ╔═╡ f4dc05d6-73ad-4496-97fc-f498c89b8eb9
+begin
+	load_mira(fname) = begin
+	mdl_orig_mira = read_json_acset(OrigMIRANet{Any,Any,Any,Any,Any,Any}, fname)
+	mdl_orig_mira[:sname] .= Symbol.(mdl_orig_mira[:sname])
+	mdl_orig_mira[:tname] .= Symbol.(mdl_orig_mira[:tname])
+	mdl_orig_mira
+end
+fname = "BIOMD0000000971_petri_orig.json"
+mdl_orig = load_mira(fname)
+end
+
 # ╔═╡ 02a79d90-34dc-4d6c-b2c8-388acfc5ab95
 md"""The model can then be read in as that type and converted to a LabelledPetriNet."""
 
 # ╔═╡ 818b653e-b750-4bdc-8689-ff15c43b8246
-mdl_orig = load_mira("BIOMD0000000971_petri_orig.json");
-
-# ╔═╡ 173f8103-edc8-44fe-a2f0-79bfbdcd78d5
-#=begin
-	mdl_orig_mira = read_json_acset(OrigMIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri_orig.json")
-	mdl_orig_mira[:sname] .= Symbol.(mdl_orig_mira[:sname])
-	mdl_orig_mira[:tname] .= Symbol.(mdl_orig_mira[:tname])
-	mdl_orig = LabelledPetriNet(mdl_orig_mira)
-end;=#
-
+# mdl_orig = load_mira("BIOMD0000000971_petri_orig.json");
 
 # ╔═╡ d3043b81-e96b-4b4a-b13e-ec6b3c09868a
 md"""The graph of the selected MIRA disease model in this original format is"""
 
 # ╔═╡ 455cbff2-c001-4427-89ee-87393d978d06
-AlgebraicPetri.Graph(mdl_orig)
+AlgebraicPetri.Graph(LabelledPetriNet(mdl_orig))
 
 # ╔═╡ f0f007c1-6528-4a85-a007-b31881297f6a
 md"""**Load Disease Model from Curated MIRA JSON**"""
@@ -115,29 +118,11 @@ We provide default values."""
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
 mdl_disease_mira = load_mira_curated("BIOMD0000000971_petri_curated.json", 0.1);
 
-# ╔═╡ 92ba176d-e991-41fd-88bf-191645ed9c88
-#=begin
-	mdl_disease_mira = read_json_acset(MIRANet{Any,Any,Any,Any,Any,Any},"BIOMD0000000971_petri_curated.json")
-	input_rates = deepcopy(mdl_disease_mira[:rate])
-	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
-	filled_rates = input_rates
-	filled_rates[map(isnothing,input_rates)] = repeat([0.1],sum(map(isnothing,input_rates)))
-end;=#
-
-# ╔═╡ 72eb264f-061b-4360-a5bd-a12633f33a34
-#=begin
-	mdl_disease_mira[:rate] = filled_rates
-	mdl_disease_mira[:concentration] = 0.0
-	mdl_disease_mira[:sname] .= Symbol.(mdl_disease_mira[:sname])
-	mdl_disease_mira[:tname] .= Symbol.(mdl_disease_mira[:tname])
-end;=#
-
 # ╔═╡ a2369b71-43a6-42bf-b322-82e56da8c151
 md"""To perform the stratifications and other computations, we extract the model data into the LabelledReactionNet and LabelledPetriNet types, removing the extra MIRA fields."""
 
 # ╔═╡ 6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
 begin
-	filled_rates = mdl_disease_mira[:rate]
 	mdl_disease_rxnet = LabelledReactionNet{Any,Any}()
 	copy_parts!(mdl_disease_rxnet,mdl_disease_mira)
 end;
@@ -150,6 +135,9 @@ md"""The graph of the selected MIRA disease model in the curated format is"""
 
 # ╔═╡ 0e104aa0-07c8-4870-a976-7fc6cf8c25de
 AlgebraicPetri.Graph(mdl_disease)
+
+# ╔═╡ 93faa61f-55e6-4ed3-a0dd-7f3b153de71d
+ns(mdl_disease), nt(mdl_disease)
 
 # ╔═╡ 2c24347b-9c55-4e14-876a-ea8e2867eaa2
 md"""### Define Type System"""
@@ -202,6 +190,9 @@ md"""Here we use `Semagrams.jl` to form the stratification model."""
 	strat_petri_decoders
 )
 
+# ╔═╡ cdcbeb7c-20d3-4fd9-9140-aa2db8649c64
+mdl_strat_sema
+
 # ╔═╡ b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
 md"""### Compute Stratified Model"""
 
@@ -242,6 +233,9 @@ md"""The resulting stratified model is"""
 # ╔═╡ dad0382a-3656-4bc9-acf6-b914916b15ac
 AlgebraicPetri.Graph(mdl_stratified)
 
+# ╔═╡ cf09b8ec-ee28-4823-b895-cdbb339211ab
+nparts(mdl_stratified, :S), nparts(mdl_stratified, :T)
+
 # ╔═╡ 1663ff26-27b4-40e7-95fe-20b8ad5333f5
 md"""Note that from the stratification we also obtain a particular observation function given by the projection of the pullback onto the disease model, i.e., the observations are the disease states summed across the corresponding stratified states."""
 
@@ -252,7 +246,10 @@ md"""### Save Stratified Model"""
 md"""We can now save the stratified model to a JSON file."""
 
 # ╔═╡ cbcc0224-dae5-49c3-81eb-b1d37abbd526
-# write_json_acset(mdl_stratified, "tmp_stratified_model.json")
+write_json_acset(mdl_stratified, "semagrams_stratified_model.json")
+
+# ╔═╡ 4c349031-5d38-4657-9724-b5480a3e1919
+write_json_acset(mdl_strat_sema, "semagrams_stratification_model.json")
 
 # ╔═╡ 6b2b41bd-ea99-4917-8eec-d6963243f35a
 md"""## Three Stratified Models"""
@@ -476,7 +473,7 @@ begin
 end;
 
 # ╔═╡ 5aa89767-cd1e-49f5-838d-9efd8bd39ef3
-md"""The fully specified stratification leads to the following model"""
+md"""The fully specified stratification leads to the following model, which is correct."""
 
 # ╔═╡ 03ad5137-c6f7-424d-99fb-65ac7f8a2ed2
 AlgebraicPetri.Graph(dom(mdl2_SIRD_M)) # Graph_typed
@@ -525,9 +522,9 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╟─2cf45122-0246-4a07-9efb-e12c76fa9d98
 # ╟─9efe6732-77d5-4659-8ccd-4b01583454a3
 # ╠═9806cc7e-f14b-453f-af9a-0c0c87e6559c
+# ╠═f4dc05d6-73ad-4496-97fc-f498c89b8eb9
 # ╟─02a79d90-34dc-4d6c-b2c8-388acfc5ab95
 # ╠═818b653e-b750-4bdc-8689-ff15c43b8246
-# ╠═173f8103-edc8-44fe-a2f0-79bfbdcd78d5
 # ╟─d3043b81-e96b-4b4a-b13e-ec6b3c09868a
 # ╠═455cbff2-c001-4427-89ee-87393d978d06
 # ╟─f0f007c1-6528-4a85-a007-b31881297f6a
@@ -535,13 +532,12 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═c7a6ed94-e97a-4a96-8f07-1370e71038b9
 # ╟─a523d826-3d49-41eb-af52-849d24f0d919
 # ╠═e2c11399-7878-4602-a276-e190857b3fa6
-# ╠═92ba176d-e991-41fd-88bf-191645ed9c88
-# ╠═72eb264f-061b-4360-a5bd-a12633f33a34
 # ╟─a2369b71-43a6-42bf-b322-82e56da8c151
 # ╠═6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
 # ╠═560fda7a-4f4e-49e9-bf09-d82557286a83
 # ╟─980ebb40-9fe5-46ac-9a74-d324de2d1b26
 # ╠═0e104aa0-07c8-4870-a976-7fc6cf8c25de
+# ╠═93faa61f-55e6-4ed3-a0dd-7f3b153de71d
 # ╟─2c24347b-9c55-4e14-876a-ea8e2867eaa2
 # ╟─23f214d0-ab7c-4325-8ea5-25591f5d571c
 # ╟─b65b454d-8347-40e0-a4fd-44a353f3fe59
@@ -554,6 +550,7 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╟─12a51952-34ab-47a3-a318-c4f58e3f3c12
 # ╟─c89f40f2-3aa9-45c0-9cc8-0abf0a67564f
 # ╠═2cc7237d-3a8b-4b86-bb08-6cba2e9e9531
+# ╠═cdcbeb7c-20d3-4fd9-9140-aa2db8649c64
 # ╟─b598e5b8-38e2-4d7d-afc9-2b0e7b1d2be8
 # ╟─1185894b-063f-402f-96e2-8852430ac4d5
 # ╟─6b4584c6-dafa-466f-9879-299556a51277
@@ -566,10 +563,12 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═2f2d6daf-c0b8-4501-86a5-65a844c9359e
 # ╟─7836fa75-5ee2-410b-aa12-eded84fac180
 # ╠═dad0382a-3656-4bc9-acf6-b914916b15ac
+# ╠═cf09b8ec-ee28-4823-b895-cdbb339211ab
 # ╟─1663ff26-27b4-40e7-95fe-20b8ad5333f5
 # ╟─1c42f5e2-4e5c-4616-ab2d-c4d3ac877b9b
 # ╟─8182d1c3-5114-4707-9442-226a6f239e13
 # ╠═cbcc0224-dae5-49c3-81eb-b1d37abbd526
+# ╠═4c349031-5d38-4657-9724-b5480a3e1919
 # ╟─6b2b41bd-ea99-4917-8eec-d6963243f35a
 # ╟─4fab7265-0d9e-435e-9aa5-972bbf7f5ab8
 # ╟─1a5c2273-a1d1-44a4-a312-db8e9cd3c7de
@@ -592,7 +591,7 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═0de945ad-093d-4975-8e48-a0748e2414b1
 # ╟─385a2551-4733-4fb0-9d5d-9763f6757578
 # ╟─e3ca90f4-b754-4834-89ce-81b8eb8ee614
-# ╟─2fb2e995-14bf-4323-800e-7c0cfadb4a7a
+# ╠═2fb2e995-14bf-4323-800e-7c0cfadb4a7a
 # ╟─028fc3bd-8577-4a85-81bd-18f3fec75437
 # ╠═452ade8f-6140-4531-9919-51e899b15f33
 # ╠═e79d741f-702d-49c9-9e1a-6442cfeb7614
@@ -617,7 +616,7 @@ AlgebraicPetri.Graph(mdl_SIRD_TC)
 # ╠═ece17ed4-dc74-4bfc-b440-6f34cd560cab
 # ╟─e64fadee-e120-4eb6-9d1b-c69b710900cc
 # ╠═06636e60-e7dc-43ee-8541-190881085d16
-# ╟─5aa89767-cd1e-49f5-838d-9efd8bd39ef3
+# ╠═5aa89767-cd1e-49f5-838d-9efd8bd39ef3
 # ╠═03ad5137-c6f7-424d-99fb-65ac7f8a2ed2
 # ╟─d9fd32c2-ed42-4af6-90a7-d144296e222d
 # ╟─44e9d001-e0df-433a-a05a-00c57e4c97c5
