@@ -1,0 +1,1 @@
+{"T":[{"rate":1.0,"tname":"travel12","transitiontype":"type"},{"rate":1.0,"tname":"travel21","transitiontype":"type"}],"S":[{"concentration":1.0,"sname":"City1","stratificationwith":["infect","disease"]},{"concentration":1.0,"sname":"City2","stratificationwith":["disease","infect"]}],"I":[{"it":1,"is":1},{"it":2,"is":2}],"O":[{"ot":1,"os":2},{"ot":2,"os":1}]}
