@@ -307,7 +307,7 @@ function load_mira_curated(fname, fillrate=1.0)
   input_rates = deepcopy(mdl_disease_mira[:rate])
 	min_rate = minimum(input_rates[map(!isnothing,input_rates)])
   filled_rates = input_rates
-  filled_rates[map(isnothing,input_rates)] = repeat([0.1],sum(map(isnothing,input_rates)))
+  filled_rates[map(isnothing,input_rates)] = repeat([fillrate],sum(map(isnothing,input_rates)))
   mdl_disease_mira[:rate] = filled_rates
   mdl_disease_mira[:concentration] = 0.0
   mdl_disease_mira[:sname] .= Symbol.(mdl_disease_mira[:sname])
@@ -339,7 +339,7 @@ function obs_IHD_from_mdl(model::AbstractLabelledPetriNet, sol, sample_times)
   dead_sample_vals = sumvarsbyname(model, :D, sol, sample_times)
 
   labels = reshape(["I", "H", "D"],1,3)
-  
+
   return hcat(inf_sample_vals, hosp_sample_vals, dead_sample_vals), labels
 end
 

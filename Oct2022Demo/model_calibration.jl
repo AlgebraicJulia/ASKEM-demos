@@ -64,7 +64,7 @@ begin
 end;
 
 # ╔═╡ e2c11399-7878-4602-a276-e190857b3fa6
-mdl_disease_mira = load_mira_curated("BIOMD0000000971_petri_curated.json", 0.1);
+mdl_disease_mira = load_mira_curated("BIOMD0000000971_petri_curated.json", 0.05);
 
 # ╔═╡ 6dec59bf-1fa0-4ad6-afdd-26ec2b92230a
 begin
@@ -212,7 +212,9 @@ begin
 	true_mdl = mdl_Mira_TC
 	# true_obs = (sol, times) -> obs_IHD_from_func(obs_Mira_TC, sol, times)
 	true_obs = obs_Mira_TC
-	u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+	# u0 = repeat([999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],2)
+	u0 = [999.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,
+			1000.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 end;
 
 # ╔═╡ da4e2714-7aec-4838-81a9-621c403130fb
@@ -265,8 +267,8 @@ md"""Here, our calibration function offers the possibility to subselect states f
 begin
 	# states_to_count = [:I,:H,:D]
 	states_to_count = [:S,:E,:I,:A,:SQ,:H,:R,:EQ,:D]
-	# p_init = repeat([1.0e-6], nt(true_mdl))
-	p_init = true_p
+	p_init = repeat([1.0e-1], nt(true_mdl))
+	# p_init = true_p
 	p_est, sol_est, loss = calibrate(true_mdl, true_obs, states_to_count, u0, p_init, 	sample_data, sample_times, data_labels)
 end;
 
