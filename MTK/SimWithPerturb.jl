@@ -152,8 +152,32 @@ function MTKCompile(lrxn::AbstractLabelledReactionNet,tspan)
   
 end
   
-# draw(load_perturb_sim)
-# wf_hom_expr = to_hom_expr(FreeBiproductCategory,load_perturb_sim)
-# wf_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(wf_hom_expr)
-# wf_script = wf_jfunc("../Oct2022Demo/lrxnet_Mira_TC_est.json",1234,(0,50))
+# serialize program wiring diagram
+write_json_acset(load_perturb_sim.diagram, "diagram.json")
+
+# visualize simulation plan
+draw(load_perturb_sim)
+
+# generate Julia program that executes simulation plan
+wf_hom_expr = to_hom_expr(FreeBiproductCategory,load_perturb_sim)
+wf_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(wf_hom_expr)
+
+# expected output
+#=  === wf_jfunc == 
+function = (x1, x2, x3;) -> begin
+    begin
+        v1 = (Main).wf_load(x1)
+        v2 = (Main).wf_get_dim(v1)
+        v3 = (Main).wf_rand(x2, v2)
+        v4 = (Main).wf_rate_add(v1, v3)
+        v5 = (Main).MTKCompile(v4, x3)
+        return v5
+    end
+end
+=#
+
+# apply plan to lrxnet from MIRA integration demo
+wf_script = wf_jfunc(joinpath(@__DIR__, "..", "Oct2022Demo", "lrxnet_Mira_TC_est.json"),1234,(0,50))
+
+# Run that simulation!
 # wf_vars, wf_params, wf_ode_sol = eval(wf_script);
