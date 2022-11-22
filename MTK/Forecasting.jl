@@ -11,6 +11,10 @@ import Catlab.CategoricalAlgebra: migrate!
 using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.Programs.RelationalPrograms
+import Catlab.WiringDiagrams.DirectedWiringDiagrams: WiringDiagramACSet
+import Catlab.CategoricalAlgebra.CSets: parse_json_acset
+
+# using JSON
 
 using Random
 using DifferentialEquations
@@ -128,17 +132,73 @@ load_form_sim = @program Workflow (f::File,ts::TSpan) begin #
 end
 
 # Serialize program wiring diagram
+# write_json_graph(load_form_sim,"diagram_load_form_sim.json") 
 write_json_acset(load_form_sim.diagram, "diagram_load_form_sim.json")
 
 # Example of reading in wiring diagram from JSON
-# NEED TO FIND CORRECT METHOD/SYNTAX: load_form_sim_roundtrip = read_json_acset(WiringDiagram{ThBiproductCategory,Any,Any,Any},joinpath(@__DIR__, "diagram_load_form_sim.json"))
+# load_form_sim_roundtrip = read_json_graph(Symbol, Symbol, Nothing, "diagram_load_form_sim.json")
+function parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet # Catlab.CategoricalAlgebra.CSets.
+  out = T()
+  #=for (k,v) ∈ input
+    add_parts!(out, Symbol(k), length(v))
+  end
+  for l ∈ values(input)
+    for (i, j) ∈ enumerate(l)
+      for k ∈ keys(j) # (k,v) = j # 
+        v = j[k]
+        vtype = eltype(out[Symbol(k)])
+        if !(v isa vtype)
+          v = vtype(v)
+        end
+        set_subpart!(out, i, Symbol(k), v)
+      end
+    end
+  end
+  out
+  end=#
+  for (k,v) ∈ input
+    add_parts!(out, Symbol(k), length(v))
+  end
+  for l ∈ values(input)
+    for (i, j) ∈ enumerate(l)
+      for k ∈ keys(j) # (k, v) = j # 
+        v = j[k]
+        vtype = eltype(out[Symbol(k)])
+        # if ((Symbol(k)==:box_type) | (Symbol(k)==:outer_in_port_type) | (Symbol(k)==:inner_in_port_type)) & (v isa String)
+        if v isa String
+            v = Meta.parse(v)
+            if v isa Expr
+                v = eval(v)
+            end
+        end
+        if !(v isa vtype)
+          v = vtype(v)
+        end
+        set_subpart!(out, i, Symbol(k), v)
+      end
+    end
+  end
+  out
+end
+
+# Read in wiring diagram acset from file
+rt_wd_acset = read_json_acset(WiringDiagramACSet{Any,Any,Any,DataType},"diagram_load_form_sim.json")
+# rt_wd_acset = parse_json_acset(WiringDiagramACSet{Any,Any,Any,DataType},JSON.parsefile("diagram_load_form_sim.json"))
+
+# Check equality of read-in wd-acset to original
+rt_wd_acset == load_form_sim.diagram
+
+# Form roundtrip wiring diagram from read-in wd acset
+load_form_sim_roundtrip = WiringDiagram{ThBiproductCategory,Any,Any,Any}(rt_wd_acset,nothing)
+
+# Check equality of roundtrip wiring diagram to original
+load_form_sim == load_form_sim_roundtrip
 
 # Visualize simulation plan
-draw(load_form_sim)
-# draw(load_form_sim_roundtrip)
+draw(load_form_sim_roundtrip)
 
 # Generate Julia function that executes simulation plan
-mtk_hom_expr = to_hom_expr(FreeBiproductCategory,load_form_sim)
+mtk_hom_expr = to_hom_expr(FreeBiproductCategory,load_form_sim_roundtrip)
 mtk_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(mtk_hom_expr)
 
 # Expected output
@@ -154,4 +214,4 @@ end
 =#
 
 # Apply generated function to lrxnet from MIRA integration demo
-mtk_ode_sol = mtk_jfunc(joinpath(@__DIR__, "..", "Oct2022Demo", "lrxnet_Mira_TC_est.json"),1234,(0,50))
+mtk_ode_sol = mtk_jfunc(joinpath(@__DIR__, "..", "Oct2022Demo", "lrxnet_Mira_TC_est.json"),(0,50))
