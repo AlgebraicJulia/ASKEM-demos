@@ -41,6 +41,29 @@ p_d(u,t) = 0.002
 p_t = [p_i,p_r,p_d]
 
 
+
+
+
+#************************************
+# Set up optimization for "control" *
+#************************************
+function predictH(p)
+  tv_sol = solve(remake(tv_prob,tspan=tspan,p=p), Tsit5(), tstops=t)    
+  vals, _ = obs_SIRHD(my_sirhd, tv_sol, t[1:findlast(t .<= t[end])])
+  return vals'
+end
+function l_func(p)
+  pred_H = predictH(p)
+  breach = sum(pred_H .> thresh_H)
+  l = -p + exp(100*breach) - 1
+  return l
+end
+optf = Optimization.OptimizationFunction((x, p) -> l_func(x), Optimization.AutoForwardDiff())
+optprob = Optimization.OptimizationProblem(optf, pinit)
+result1 = Optimization.solve(optprob, ADAM(0.05), callback = callback, maxiters = 300)
+optprob2 = remake(optprob,u0 = result1.u)
+result2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=0.01), callback=callback) #=,
+    
     
 #****
 
