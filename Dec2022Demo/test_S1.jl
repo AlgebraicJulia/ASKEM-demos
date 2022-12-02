@@ -62,7 +62,7 @@ optf = Optimization.OptimizationFunction((x, p) -> l_func(x), Optimization.AutoF
 optprob = Optimization.OptimizationProblem(optf, pinit)
 result1 = Optimization.solve(optprob, ADAM(0.05), callback = callback, maxiters = 300)
 optprob2 = remake(optprob,u0 = result1.u)
-result2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=0.01), callback=callback) #=,
+result2 = Optimization.solve(optprob2, Optim.BFGS(initial_stepnorm=0.01), callback=callback) 
     
     
 #****
@@ -100,3 +100,17 @@ p_t = Dict()
 p_t[:inf] = p_i
 p_t[:recover] = p_r
 p_t[:death] = p_d
+
+@present TheoryOrigMIRANet <: SchLabelledReactionNet begin
+    MID::AttrType
+    MCTX::AttrType
+    Template::AttrType
+    mira_ids::Attr(S, MID)
+    mira_context::Attr(S, MCTX)
+    mira_initial_value::Attr(S, Rate) # Concentration) #
+    template_type::Attr(T, Template)
+    parameter_name::Attr(T, Name)
+    parameter_value::Attr(T, Rate)
+end
+@abstract_acset_type AbstractOrigMIRANet <: AbstractLabelledReactionNet
+@acset_type OrigMIRANet(TheoryOrigMIRANet) <: AbstractOrigMIRANet
