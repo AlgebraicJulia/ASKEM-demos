@@ -132,3 +132,12 @@ AlgebraicPetri.Graph(dom(Vax_aug_typed))
 # Vax Multi-region SIRD stratified model
 SIRD_MA_Vax = typed_stratify(SIRD_MA, Vax_aug_typed)
 AlgebraicPetri.Graph(dom(SIRD_MA_Vax))
+
+
+# List new parameters
+println("Stratified States:")
+map(println,dom(SIRD_MA_Vax)[:sname])
+println("Stratified Transitions:")
+map(println,(dom(SIRD_MA_Vax)[:tname]))
+
+# 
