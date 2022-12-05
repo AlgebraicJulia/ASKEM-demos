@@ -1,3 +1,17 @@
+module Upstream
+export presentationToLabelledPetriNet
+
+using AlgebraicPetri
+using Catlab, Catlab.Theories
+using Catlab.CategoricalAlgebra
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
+import Catlab.CategoricalAlgebra: migrate!
+using Catlab.Graphs.BasicGraphs, Catlab.Graphs.BipartiteGraphs
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Programs.RelationalPrograms
+
 function presentationToLabelledPetriNet(present)
     lpn = LabelledPetriNet(map(Symbol,generators(present,:Ob)))
     state_idx = Dict()
@@ -22,4 +36,6 @@ function presentationToLabelledPetriNet(present)
         end
     end
     return lpn
+end
+
 end

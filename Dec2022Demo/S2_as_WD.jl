@@ -230,7 +230,7 @@ function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::Abst
 end
   
 rt_wd_acset = read_json_acset(WiringDiagramACSet{Any,Any,Any,Any},"s2_strat_sird_age_vax.json")
-rt_wd_acset[:box_type] = Box{Symbol}
+rt_wd_acset[:box_type] := Box{Symbol}
 rt_wd_acset2 = WiringDiagramACSet{Any,Any,Any,DataType}()
 copy_parts!(rt_wd_acset2,rt_wd_acset)
 
@@ -239,7 +239,7 @@ copy_parts!(rt_wd_acset2,rt_wd_acset)
 rt_wd_acset2 == stratify_sird_age_vax.diagram
 
 # Form roundtrip wiring diagram from read-in wd acset
-s2_strat = WiringDiagram{ThBiproductCategory,Any,Any,Any}(rt_wd_acset2,nothing)
+# s2_strat = WiringDiagram{ThBiproductCategory,Any,Any,Any}(rt_wd_acset2,nothing)
 
 #*********************************************
 # Construct presentation as LabelledPetriNet *
