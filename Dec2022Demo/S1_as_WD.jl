@@ -17,8 +17,11 @@ import Catlab.CategoricalAlgebra.CSets: parse_json_acset
 # using JSON
 
 using Random
-using DifferentialEquations
+using OrdinaryDiffEq
+using Optimization
+using OptimizationOptimisers
 
+import ASKEM.Oct2022Demo: sumvarsbyname, MakeReactionSystem
 
 function formSIRD()
     SIRD = LabelledPetriNet([:S, :I, :R, :D],
