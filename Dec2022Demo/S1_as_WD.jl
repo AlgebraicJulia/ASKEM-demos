@@ -105,24 +105,92 @@ plot!(t,tv_sol_cntrl(t)[2,:]*.5)
 
 
 # Form Workflow presentation of FreeBiproductCategory
-@present Workflow(FreeBiproductCategory) begin
+@present ControlWorkflow(FreeBiproductCategory) begin
     (File,LPN,TSpan,ODEProb,ODESol)::Ob 
     MTKLoadLRN::Hom(File,LRN)
     MTKFormODEProb::Hom(LRN⊗TSpan,ODEProb)
     MTKSolveODE::Hom(ODEProb,ODESol)
+
+    formSIRD::Hom(munit(),LPN)
+    MakeReactionSystem::Hom(LPN,RXN)
+    runControlAuto::Hom(RXN⊗StateVect⊗RateVect⊗TSpan,SolDiscr⊗TimeVect)
+ 
 end
 
 # Form wiring diagram of load_form_sim Workflow
 
-s1_sird_cntrl_policy = @program Workflow (f::File,ts::TSpan) begin 
+s1_sird_cntrl_policy = @program ControlWorkflow (f::File,ts::TSpan) begin 
 
 end
 
-s1_sird_cntrl_optim = @program Workflow (f::File,ts::TSpan) begin # 
+s1_sird_cntrl_optim = @program ControlWorkflow (f::File,ts::TSpan) begin # 
     lrn = MTKLoadLRN(f)
     ode_prob = MTKFormODEProb(lrn,ts)
     ode_sol = MTKSolveODE(ode_prob)
     
     
     return ode_sol 
+end
+
+using LinearAlgebra
+function makeK(u,p)
+    A = [1-p[1]*u[2] -p[1]*u[1] 0 0 2*u[1]u[2]*p[1] 0 0 0;
+      p[1]*u[2] 1+p[1]*u[1]-p[2]-p[3] 0 0 0 -2*u[1]*u[2]*p[1]+u[2]*p[2]+u[2]*p[3] 0 0;
+      0 p[2] 1 0 0 0 -p[2]*u[2] 0;
+      0 p[3] 0 1 0 0 0 -p[3]*u[2];
+      0 0 0 0 1 0 0 0;
+      0 0 0 0 0 1 0 0;
+      0 0 0 0 0 0 1 0;
+      0 0 0 0 0 0 0 1]
+  
+    B = [-u[2]*u[3] 0 0;
+    u[2]*u[3] -u[2] -u[2];
+    0 u[2] 0;
+    0 0 u[2];
+    0 0 0;
+    0 0 0;
+    0 0 0;
+    0 0 0]
+  
+    Q = zeros(8,8)
+    Q[1,1] = 1
+    Q[2,2] = 1
+    Q[4,4] = 1
+  
+    R = Matrix{Float64}(I,3,3)
+   
+    Qf = Q
+  
+    PN = Q + A'*Qf*A - A'*Qf*B*inv(R+B'*Qf*B)*B'*Qf*A
+    return K = inv(R + B'*PN*B)*B'*PN*A  
+  end
+
+function runControlAuto(rxn,u0,p,tspan)
+    u_prev = u0
+    p_prev = p
+    t = tspan[0]:tspan[1]
+    t_prev = t[1]
+    sol_discr = zeros(length(u_prev),length(t))
+    sol_discr[:,1] = u_prev
+    for ii in 2:length(t)
+        t_curr = t[ii]
+        K_curr = makeK(u_prev,p_prev)
+        u_aug = [u_prev; [1,1,1,1]]
+        p_curr = -K_curr*u_aug
+        prob = ODEProblem(rxn, u_prev, (t_prev,t_curr), p_curr)
+        sol_curr = solve(prob, Tsit5())
+        u_curr = sol_curr(t_curr)
+        sol_discr[:,ii] = u_curr
+        u_prev = u_curr
+        p_prev = p_curr
+        t_prev = t_curr
+    end
+    return sol_discr, t
+end
+
+s1_sird_cntrl_auto = @program ControlWorkflow (u0::StateVect,p::RateVect,tspan::TSpan) begin # 
+    SIRD = formSIRD()
+    rxn = MakeReactionSystem(SIRD)
+    sol_discr, t = runControlAuto(rxn,u0,p,tspan)
+    return sol_discr, t 
 end
