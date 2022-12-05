@@ -222,6 +222,15 @@ end
 #********************************
 # Write wiring diagrams to file *
 #********************************
+import Catlab.Graphics.Graphviz: run_graphviz
+draw_diagram(d,s::String) = open(s, "w") do fp
+    run_graphviz(fp, to_graphviz(d))
+end
+try mkdir("s1_diagrams") catch end
+draw_diagram(s1_sird_cntrl_policy, joinpath("s1_diagrams","sird_cntrl_policy.dot"))
+draw_diagram(s1_sird_cntrl_optim, joinpath("s1_diagrams", "sird_cntrl_optim.dot"))
+draw_diagram(s1_sird_cntrl_auto, joinpath("s1_diagrams/", "sird_cntrl_auto.dot"))
+
 write_json_acset(s1_sird_cntrl_policy.diagram, "s1_sird_cntrl_policy.json")
 write_json_acset(s1_sird_cntrl_optim.diagram, "s1_sird_cntrl_optim.json")
 write_json_acset(s1_sird_cntrl_auto.diagram, "s1_sird_cntrl_auto.json")
