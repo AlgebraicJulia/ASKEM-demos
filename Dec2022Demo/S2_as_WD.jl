@@ -11,6 +11,8 @@ using Catlab.Present
 using AlgebraicPetri
 using AlgebraicPetri: Graph
 
+import ASKEM.Upstream: presentationToLabelledPetriNet
+
 # Type system model
 types′ = LabelledPetriNet([:Pop],
     :infect=>((:Pop, :Pop)=>(:Pop, :Pop)),
@@ -53,8 +55,6 @@ function typeSIRD(SIRD_aug, types)
     @assert is_natural(SIRD_aug_typed)
     return SIRD_aug_typed
 end
-
-num_ages = 2
 
 # Function to assemble a multi-region model
 function makeMultiAge(n;f_aug=true)
@@ -150,7 +150,7 @@ end
 # AlgebraicPetri.Graph(dom(SIRD_MA_Vax))
 
 # Form Workflow presentation of FreeBiproductCategory
-@present Workflow(FreeBiproductCategory) begin
+@present StratificationWorkflow(FreeBiproductCategory) begin
     (File,LRN,LPN,TypedLPN,StrataSpec,LPNss,ObsFunc,ParamVec,StateVec,TSpan,NumTS,SampleData,SampleTimes,ODEProb,ODESol,Labels,Loss,MdlAug,MdlType,MdlTyped,NumStrat)::Ob
     LoadLRN::Hom(File,LRN)
     
@@ -168,7 +168,7 @@ end
  end
 
 # Form wiring diagram of load_stratify_calibrate_control Workflow
-stratify_sird_age_vax = @program Workflow (num_ages::NumStrat, out_file::File) begin #
+stratify_sird_age_vax = @program StratificationWorkflow (num_ages::NumStrat, out_file::File) begin #
     # Form models
     mdl_sird = formSIRD()
     mdl_vax = formVax()
@@ -189,10 +189,64 @@ stratify_sird_age_vax = @program Workflow (num_ages::NumStrat, out_file::File) b
 end
 
 # Display wiring diagram of workflow
-# draw(load_stratify_calibrate_control)
+# draw(stratify_sird_age_vax)
 
-# Write diagram to file as JSON
-write_json_acset(stratify_sird_age_vax.diagram, "stratify_sird_age_vax.json")
+#********************************
+# Write diagram to file as JSON *
+#********************************
+write_json_acset(stratify_sird_age_vax.diagram, "s2_strat_sird_age_vax.json")
 
-workflow_hom_expr = to_hom_expr(FreeBiproductCategory, stratify_sird_age_vax)
-workflow_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(workflow_hom_expr)
+
+#****************************************
+# Test functionality of wiring diagrams *
+#****************************************
+stratify_sird_hom_expr = to_hom_expr(FreeBiproductCategory, stratify_sird_age_vax)
+stratify_sird_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(stratify_sird_hom_expr)
+stratify_sird_jfunc(7,"sird_age7_vax.json")
+
+#******************************
+# Confirm read-in of diagrams *
+#******************************
+import Catlab.WiringDiagrams.DirectedWiringDiagrams: WiringDiagramACSet
+using Catlab.CategoricalAlgebra.CSets: parse_json_acset
+function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet 
+    out = T()
+    for (k,v) ∈ input
+      add_parts!(out, Symbol(k), length(v))
+    end
+    for l ∈ values(input)
+      for (i, j) ∈ enumerate(l)
+        for k ∈ keys(j) # (k,v) = j # 
+          v = j[k]
+          vtype = eltype(out[Symbol(k)])
+          if !(v isa vtype)
+            v = vtype(v)
+          end
+          set_subpart!(out, i, Symbol(k), v)
+        end
+      end
+    end
+    out
+end
+  
+rt_wd_acset = read_json_acset(WiringDiagramACSet{Any,Any,Any,Any},"s2_strat_sird_age_vax.json")
+rt_wd_acset[:box_type] = Box{Symbol}
+rt_wd_acset2 = WiringDiagramACSet{Any,Any,Any,DataType}()
+copy_parts!(rt_wd_acset2,rt_wd_acset)
+
+
+# Check equality of read-in wd-acset to original
+rt_wd_acset2 == stratify_sird_age_vax.diagram
+
+# Form roundtrip wiring diagram from read-in wd acset
+s2_strat = WiringDiagram{ThBiproductCategory,Any,Any,Any}(rt_wd_acset2,nothing)
+
+#*********************************************
+# Construct presentation as LabelledPetriNet *
+#*********************************************
+
+# Form LabelledPetriNet and write to file
+swf_lpn = presentationToLabelledPetriNet(StratificationWorkflow)
+write_json_acset(swf_lpn,"s2_strat_wf_present.json")
+
+# lpn_rt = read_json_acset(LabelledPetriNet,"s1_cntrl_wf_present.json")
