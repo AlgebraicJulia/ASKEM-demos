@@ -1,25 +1,16 @@
-include("LibForOct2022Demo.jl");
-include("LibForDec2022Demo.jl")
+using ASKEM
+using AlgebraicPetri
+using Catlab
+using Catlab.CategoricalAlgebra
+using Plots
+using ModelingToolkit
+using OrdinaryDiffEq
+using Optimization
+using Flux
+using Optim
 
-
-types′ = LabelledPetriNet([:Pop],
-    :infect=>((:Pop, :Pop)=>(:Pop, :Pop)),
-    :disease=>(:Pop=>:Pop),
-    :strata=>(:Pop=>:Pop))
-types = map(types′, Name=name->nothing)
-
-
-SIRD = LabelledPetriNet([:S, :I, :R, :D],
-    :inf => ((:S,:I) => (:I,:I)),
-    :recover => (:I=>:R),
-    :death => (:I=>:D));
-AlgebraicPetri.Graph(SIRD)
-
-SIRD_typed = homomorphism(SIRD, types;
-initial=(T=[1,2,2],I=[1,2,3,3],O=[1,2,3,3]),
-type_components=(Name=x->nothing,))
-@assert is_natural(SIRD_typed)
-
+types′ = infectious_ontology
+types = strip_names(infectious_ontology)
 
 p_i(u,t) = 0.000025 # -0.000025*cos(t/100*2*pi)
 # sigmoid(x) = 1/(1-exp(-x))
@@ -72,8 +63,8 @@ function l_func(control_params)
   pred_H = predictH(control_params[1])
   breach = sum(pred_H .> thresh_H)/length(pred_H)
   l = sig(control_params[1]) + exp(20*breach) - 1
-  println(breach)
-  println(l)
+  # println(breach)
+  # println(l)
   return l
 end
 optf = Optimization.OptimizationFunction((x, p) -> l_func(x), Optimization.AutoForwardDiff())
@@ -93,7 +84,7 @@ plot!(t,tv_sol_cntrl(t)[2,:]*.5)
 #***********************
 # Automated controller *
 #***********************
-control = -K*u
+# control = -K*u
 
 p_t = [p_i,p_r,p_d]
 tv_rxn = vectorfield(SIRD)
@@ -139,26 +130,27 @@ function makeK(u,p)
 end
 
 rxn = MakeReactionSystem(SIRD)
-tspan = (0,1000)
-u_prev = [999,1,0,0]
-p_prev = [0.000025, 0.005, 0.001]
-prev_t = t[1]
-sol_discr = zeros(length(u_prev),length(t))
-sol_discr[:,1] = u_prev
-for ii in 2:length(t)
-  curr_t = t[ii]
-  K_curr = makeK(u_prev,p_prev)
-  u_aug = [u_prev; [1,1,1,1]]
-  p_curr = -K_curr*u_aug
-  prob = ODEProblem(rxn, u_prev, (prev_t,curr_t), p_curr)
-  sol_curr = solve(prob, Tsit5())
-  u_curr = sol_curr(curr_t)
-  sol_discr[:,ii] = u_curr
-  u_prev = u_curr
-  p_prev = p_curr
-  prev_t = curr_t
+function mk_sol_discr()
+  tspan = (0,1000)
+  u_prev = [999,1,0,0]
+  p_prev = [0.000025, 0.005, 0.001]
+  prev_t = t[1]
+  sol_discr = zeros(length(u_prev),length(t))
+  sol_discr[:,1] = u_prev
+  for ii in 2:length(t)
+    curr_t = t[ii]
+    K_curr = makeK(u_prev,p_prev)
+    u_aug = [u_prev; [1,1,1,1]]
+    p_curr = -K_curr*u_aug
+    prob = ODEProblem(rxn, u_prev, (prev_t,curr_t), p_curr)
+    sol_curr = solve(prob, Tsit5())
+    u_curr = sol_curr(curr_t)
+    sol_discr[:,ii] = u_curr
+    u_prev = u_curr
+    p_prev = p_curr
+    prev_t = curr_t
+  end
 end
-plot(sol_discr')
 
 
 #****
@@ -170,27 +162,26 @@ function evalparam(β::Number,t)
   β
 end
 
-rates[i] => evalparam(rates[i],t)
+# model = SIRD
 
+# rxn = MakeReactionSystem(model)
 
-rxn = MakeReactionSystem(model)
+# rxn = vectorfield(model) # f!(du, u, p, t)
 
-rxn = vectorfield(model) # f!(du, u, p, t)
+# tspan = (sample_times[1], sample_times[end])
 
-tspan = (sample_times[1], sample_times[end])
+# prob = ODEProblem(rxn, u0, tspan, p_init)
 
-prob = ODEProblem(rxn, u0, tspan, p_init)
+# p_estimate = p_init
+# loss = 0
+# sol_estimate = Nothing
 
-p_estimate = p_init
-loss = 0
-sol_estimate = Nothing
+# AtoB = LabelledPetriNet([:A, :B], :recover => (:A=>:B));
+# p_r(t) = 0.05+0.01*cos(t/100*4+pi/4)
 
-AtoB = LabelledPetriNet([:A, :B], :recover => (:A=>:B));
-p_r(t) = 0.05+0.01*cos(t/100*4+pi/4)
-
-function p(t) 
-  [p_r(t)]
-end
+# function p(t)
+#   [p_r(t)]
+# end
 
 p_t = Dict()
 p_t[:inf] = p_i
@@ -212,11 +203,11 @@ end
 @acset_type OrigMIRANet(TheoryOrigMIRANet) <: AbstractOrigMIRANet
 
 # *****
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/CHIME_SIR_dynamics_BiLayer.json")
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/CHIME_SVIIvR_dynamics_BiLayer.json")
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/Vucky_dynamics_BiLayer.json")
-lpn_sir = LabelledPetriNet()
-migrate!(lpn_sir,lbn_sir)
-AlgebraicPetri.Graph(lpn_sir)
+# lbn_sir = read_json_acset(LabelledBilayerNetwork,"../../data/CHIME_SIR_dynamics_BiLayer.json")
+# lbn_sir = read_json_acset(LabelledBilayerNetwork,"../../data/CHIME_SVIIvR_dynamics_BiLayer.json")
+# lbn_sir = read_json_acset(LabelledBilayerNetwork,"../../data/Vucky_dynamics_BiLayer.json")
+# lpn_sir = LabelledPetriNet()
+# migrate!(lpn_sir,lbn_sir)
+# AlgebraicPetri.Graph(lpn_sir)
 
-itype = read_json_acset(LabelledPetriNet,"../data/infectious_type.json")
+# itype = read_json_acset(LabelledPetriNet,"../data/infectious_type.json")
