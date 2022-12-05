@@ -121,9 +121,9 @@ AlgebraicPetri.Graph(Vax_aug)
 # Typed Vax model
 Vax_aug_typed = ACSetTransformation(Vax_aug, types,
 S = [s, s],
-T = [t_interact, t_interact, t_interact, t_strata, t_disease, t_disease],
-I = [i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_disease, i_disease],
-O = [o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_disease, o_disease],
+T = [t_interact, t_interact, t_interact, t_interact, t_strata, t_disease, t_disease],
+I = [i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_disease, i_disease],
+O = [o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_disease, o_disease],
 Name = name -> nothing # specify the mapping for the loose ACSet transform
 )
 @assert is_natural(Vax_aug_typed)
