@@ -12,9 +12,6 @@ types = map(types′, Name=name->nothing)
 SIRD = LabelledPetriNet([:S, :I, :R, :D],
     :inf => ((:S,:I) => (:I,:I)),
     :recover => (:I=>:R),
-    :death => (:I=>:D));SIRD = LabelledPetriNet([:S, :I, :R, :D],
-    :inf => ((:S,:I) => (:I,:I)),
-    :recover => (:I=>:R),
     :death => (:I=>:D));
 AlgebraicPetri.Graph(SIRD)
 
