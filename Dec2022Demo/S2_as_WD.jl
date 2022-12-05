@@ -37,6 +37,10 @@ function formSIRD()
     return SIRD_aug
 end
 
+function formInfType()
+  return types
+end
+
 # Typed SIRD model
 function typeSIRD(SIRD_aug, types)
     SIRD_aug_typed = ACSetTransformation(SIRD_aug, types,
@@ -53,7 +57,7 @@ end
 num_ages = 2
 
 # Function to assemble a multi-region model
-function makeMultiAge(n,f_aug=false)
+function makeMultiAge(n;f_aug=true)
     lstates = []
     ltrans = []
     for ii in 1:n
@@ -74,13 +78,8 @@ function makeMultiAge(n,f_aug=false)
             push!(ltrans,Symbol("id"*string(ii)) => ((lstates[ii])=>(lstates[ii])))
         end
     end
-    map(println,ltrans)
-    MultiAge = LabelledPetriNet(lstates,ltrans...)  
+    MultiAge = LabelledPetriNet(lstates,ltrans...)
 end
-
-# Multi-age augmented model
-MultiAge_aug = makeMultiAge(num_ages, true)
-AlgebraicPetri.Graph(MultiAge_aug)
 
 # Typed Multi-age model
 function typeAge(MultiAge_aug,types)
@@ -142,35 +141,39 @@ function typeVax(Vax_aug,types)
     return Vax_aug_typed
 end
 
+function writeMdlStrat(mdl, file)
+  write_json_acset(dom(mdl), file)
+end
+
 # Vax Multi-region SIRD stratified model
-SIRD_MA_Vax = typed_stratify(SIRD_MA, Vax_aug_typed)
-AlgebraicPetri.Graph(dom(SIRD_MA_Vax))
+# SIRD_MA_Vax = typed_stratify(SIRD_MA, Vax_aug_typed)
+# AlgebraicPetri.Graph(dom(SIRD_MA_Vax))
 
 # Form Workflow presentation of FreeBiproductCategory
 @present Workflow(FreeBiproductCategory) begin
-    (File,LRN,LPN,TypedLPN,StrataSpec,LPNss,ObsFunc,ParamVec,StateVec,TSpan,NumTS,SampleData,SampleTimes,ODEProb,ODESol,Labels,Loss)::Ob 
+    (File,LRN,LPN,TypedLPN,StrataSpec,LPNss,ObsFunc,ParamVec,StateVec,TSpan,NumTS,SampleData,SampleTimes,ODEProb,ODESol,Labels,Loss,MdlAug,MdlType,MdlTyped,NumStrat)::Ob
     LoadLRN::Hom(File,LRN)
     
     formSIRD::Hom(munit(),MdlAug)
     formVax::Hom(munit(),MdlAug)
     formInfType::Hom(munit(),MdlType)
-    makeMultiAge::Hom(NumStrat⊗Bool,MdlAug)
+    makeMultiAge::Hom(NumStrat,MdlAug)
 
     typeSIRD::Hom(MdlAug⊗MdlType,MdlTyped)
     typeAge::Hom(MdlAug⊗MdlType,MdlTyped)
     typeVax::Hom(MdlAug⊗MdlType,MdlTyped)
     typed_stratify::Hom(MdlTyped⊗MdlTyped,MdlTyped)
 
-    writeMdlStrat(MdlTyped,File)
+    writeMdlStrat::Hom(MdlTyped⊗File,munit())
  end
 
 # Form wiring diagram of load_stratify_calibrate_control Workflow
-stratify_sird_age_vax = @program Workflow (num_ages::NumStrat) begin # 
+stratify_sird_age_vax = @program Workflow (num_ages::NumStrat, out_file::File) begin #
     # Form models
     mdl_sird = formSIRD()
     mdl_vax = formVax()
     mdl_type = formInfType()
-    mdl_age = makeMultiAge(num_ages, true)
+    mdl_age = makeMultiAge(num_ages)
 
     # Specify types of models
     mdl_sird_typed = typeSIRD(mdl_sird,mdl_type)
@@ -182,15 +185,14 @@ stratify_sird_age_vax = @program Workflow (num_ages::NumStrat) begin #
     mdl_sird_age_vax = typed_stratify(mdl_sird_age, mdl_vax_typed)
 
     # Write stratified model to file
-    write_json_acset(dom(mdl_sird_age_vax), "mdl_sird_age_vax.json")
-
-    return  mdl_sird_age_vax
+    writeMdlStrat(mdl_sird_age_vax, out_file)
 end
 
 # Display wiring diagram of workflow
-draw(load_stratify_calibrate_control)
+# draw(load_stratify_calibrate_control)
 
 # Write diagram to file as JSON
-write_json_acset(load_stratify_calibrate_control.diagram, "diagram_load_strat_calib_cntrl.json")
+write_json_acset(stratify_sird_age_vax.diagram, "stratify_sird_age_vax.json")
 
-
+workflow_hom_expr = to_hom_expr(FreeBiproductCategory, stratify_sird_age_vax)
+workflow_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(workflow_hom_expr)
