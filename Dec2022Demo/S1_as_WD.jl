@@ -19,15 +19,6 @@ import Catlab.CategoricalAlgebra.CSets: parse_json_acset
 using Random
 using DifferentialEquations
 
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/CHIME_SIR_dynamics_BiLayer.json")
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/CHIME_SVIIvR_dynamics_BiLayer.json")
-lbn_sir = read_json_acset(LabelledBilayerNetwork,"../data/Vucky_dynamics_BiLayer.json")
-lpn_sir = LabelledPetriNet()
-migrate!(lpn_sir,lbn_sir)
-AlgebraicPetri.Graph(lpn_sir)
-
-itype = read_json_acset(LabelledPetriNet,"../data/infectious_type.json")
-
 
 function formSIRD()
     SIRD = LabelledPetriNet([:S, :I, :R, :D],
