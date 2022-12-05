@@ -1,9 +1,10 @@
 module Oct2022Demo
 
 export stratify_with_obs_function, simulate, calibrate, MakeReactionSystem, generate_data, 
-       get_infected_states, get_susceptible_states,
-       get_recovered_states, optimise_p, full_train, obs_SIRD, 
-       makeLossFunction, plot_obs_w_ests, full_train_rand
+  get_infected_states, get_susceptible_states,
+  get_recovered_states, optimise_p, full_train, obs_SIRD,
+  makeLossFunction, plot_obs_w_ests, full_train_rand,
+  sumvarsbyname
 
 using AlgebraicPetri
 using Catlab
