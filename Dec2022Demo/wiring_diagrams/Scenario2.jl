@@ -229,15 +229,59 @@ function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::Abst
     out
 end
   
-rt_wd_acset = read_json_acset(WiringDiagramACSet{Any,Any,Any,Any},"s2_strat_sird_age_vax.json")
-rt_wd_acset[:box_type] .= Box{Symbol}
-rt_wd_acset2 = WiringDiagramACSet{Any,Any,Any,DataType}()
-copy_parts!(rt_wd_acset2,rt_wd_acset)
+
+deserialize_wiringdiagram(filepath::String) = deserialize_wiringdiagram!(read_json_acset(WiringDiagramACSet{Symbol,Any,Any,Any}, filepath))
+deserialize_wiringdiagram!(dwd) = begin
+  convsymbol(dwd, key) = begin
+    dwd[key] .= Symbol.(dwd[key])
+  end
+  
+  # function porttypes(dwd, inout::Symbol, i::Int)
+  #   ports = (inout == :in ?
+  #     incident(dwd, i, :in_port_box) :
+  #     incident(dwd, i, :out_port_box))
+  #   map(ports) do ps
+  #     map(ps) do p
+  #       inout == :in ? dwd[p, :in_port_type] : dwd[p, :out_port_type]
+  #     end
+  #   end
+  # end
+
+  dwd[:box_type] .= Box{Symbol}
+  convsymbol(dwd, :in_port_type)
+  convsymbol(dwd, :out_port_type)
+  convsymbol(dwd, :outer_in_port_type)
+  convsymbol(dwd, :outer_out_port_type)
+  # newbox(i::Int) = Box{Symbol}(Symbol(dwd[i, :value]),
+  #                             porttypes(dwd, :in, i),
+  #                             porttypes(dwd, :out, i))
+  # dwd[:value] .= map(newbox,parts(dwd, :Box))
+  dwd[:value] .= map(Symbol,dwd[:value])
+  wd_acset2 = WiringDiagramACSet{Symbol,Any,Any,DataType}()
+  copy_parts!(wd_acset2,dwd)
+  return WiringDiagram{ThBiproductCategory, Symbol, Any, Any}(wd_acset2, :read)
+end
+rt_wd = deserialize_wiringdiagram("s2_strat_sird_age_vax.json")
 
 
+to_graphviz(rt_wd, labels=true)
+to_graphviz(stratify_sird_age_vax, labels=true)
+
+using Test 
 # Check equality of read-in wd-acset to original
-rt_wd_acset2 == stratify_sird_age_vax.diagram
+# we aren't getting exact equality
+@testset "Round Trip of WiringDiagram" begin
+  @test rt_wd != stratify_sird_age_vax
+  @test !is_isomorphic(rt_wd, stratify_sird_age_vax)
 
+  @test is_isomorphic(rt_wd.diagram, stratify_sird_age_vax.diagram)
+  @test boxes(rt_wd) == boxes(stratify_sird_age_vax)
+  @test wires(rt_wd) == wires(stratify_sird_age_vax)
+  for i in parts(rt_wd.diagram, :InPort)
+    @test in_wires(rt_wd,5) == in_wires(stratify_sird_age_vax,5)
+    @test out_wires(rt_wd,5) == out_wires(stratify_sird_age_vax,5)
+  end
+end
 # Form roundtrip wiring diagram from read-in wd acset
 # s2_strat = WiringDiagram{ThBiproductCategory,Any,Any,Any}(rt_wd_acset2,nothing)
 
