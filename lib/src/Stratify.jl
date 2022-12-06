@@ -1,8 +1,10 @@
 module Stratify 
-export stratify, stratify_except, age_strata, StrataSpec, add_cross_terms_with_rates
+export stratify, stratify_except,stratify_typed,stratify_except_typed, 
+       age_strata, StrataSpec, add_cross_terms_with_rates, decompose
 
 using Catlab.CategoricalAlgebra
 using AlgebraicPetri
+using ..Ontologies: strip_names
 
 """
 Modify a typed petri net to add cross terms
@@ -44,19 +46,29 @@ the Quarantine model) and Q,NQ can change disease state while only NQ can
 participate in infections. See the tests for more details.
 
 This works by add cross terms prior to taking a pullback.
+
+Returns a typed model, i.e. a map in Petri.
 """
-function stratify(pn1, pn2, type_system)
-  pullback([add_cross_terms(pn, type_system) for pn in [pn1, pn2]]) |> apex
+function stratify_typed(pn1, pn2, type_system)
+  pn1′, pn2′ = [add_cross_terms(pn, type_system) for pn in [pn1, pn2]]
+  pb = pullback(pn1′, pn2′) 
+  return first(legs(pb)) ⋅ pn1′
 end
 
-function stratify_except(pn1, pn2, type_system)
+function stratify_except_typed(pn1, pn2, type_system)
   cross1, cross2 = map([pn1=>pn2,pn2=>pn1]) do (pn, other) 
     map(parts(dom(pn[1]),:S)) do s 
       setdiff(type_system[other[1][:T]|>collect,:tname], get(Dict(pn[2]), s, []))
     end
   end
-  stratify(pn1[1]=>cross1,pn2[1]=>cross2, type_system)
+  stratify_typed(pn1[1]=>cross1,pn2[1]=>cross2, type_system) 
 end
+
+stratify(pn1, pn2, type_system) = stratify_typed(pn1,pn2,type_system) |> dom
+
+stratify_except(pn1, pn2, type_system) = 
+  stratify_except_typed(pn1,pn2,type_system) |> dom
+
 
 
 #=
@@ -108,5 +120,54 @@ function age_strata(n::Int)
   return res
 end 
 
+
+
+"""Copied from Catlab PR 710"""
+function migrate(f::TightACSetTransformation, F::DeltaMigration) 
+  d = Dict()
+  for (ob_dom,ob_codom) in F.functor.ob_map
+    if Symbol(ob_codom) ∈ keys(components(f))
+      d[Symbol(ob_dom)] = f[Symbol(ob_codom)]
+    end
+  end
+  TightACSetTransformation(NamedTuple(d), F(dom(f)), F(codom(f)))
+end
+
+"""Remove attributes from a LabelledPetriNet"""
+strip_names_F = DeltaMigration(FinFunctor(
+  Dict(:S=>:S,:T=>:T,:O=>:O,:I=>:I), 
+  Dict(k => k for k in SchPetriNet.generators[:Hom]), 
+  SchPetriNet, SchLabelledPetriNet), LabelledPetriNet, PetriNet)
+
+"""Convert a LabeledPetriNet morphism into a PetriNet morphism, ignoring attrs"""
+function remove_names(p::ACSetTransformation)
+  init = NamedTuple([k=>collect(v) for (k,v) in pairs(components(p))])
+  dom_codom = strip_names.([dom(p), codom(p)]) # turn into TIGHT transformations
+  migrate(homomorphism(dom_codom...; initial=init), strip_names_F)
+end
+
+
+"""
+Given a target model, determine if it is stratified by any pair of 
+models from a list of candidates. 
+"""
+function decompose(tgt_model, candidate_legs) 
+  stripped_tgt_model = remove_names(tgt_model)
+  n = length(candidate_legs)
+  res = []
+  for i in 1:n 
+    icand = remove_names(candidate_legs[i])
+    for j in i:n 
+      jcand = remove_names(candidate_legs[j])
+      pb = first(legs(pullback(icand, jcand))) ⋅ icand
+      if any(isomorphisms(dom(stripped_tgt_model), dom(pb))) do iso # copied from PR 709
+          force(stripped_tgt_model) == force(iso ⋅ pb)
+        end
+          push!(res, candidate_legs[i]=>candidate_legs[j])
+      end
+    end
+  end 
+  return res
+end
 
 end # module 
