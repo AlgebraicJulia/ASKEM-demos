@@ -230,8 +230,8 @@ function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::Abst
 end
   
 
-deserialize_wiringdiagram(filepath::String) = deserialize_wiringdiagram!(read_json_acset(WiringDiagramACSet{Symbol,Any,Any,Any}, filepath))
-deserialize_wiringdiagram!(dwd) = begin
+deserialize_wiringdiagram(filepath::String, value=nothing) = deserialize_wiringdiagram!(read_json_acset(WiringDiagramACSet{Symbol,Any,Any,Any}, filepath), isnothing(value) ? filepath : value)
+deserialize_wiringdiagram!(dwd, value) = begin
   convsymbol(dwd, key) = begin
     dwd[key] .= Symbol.(dwd[key])
   end
@@ -244,7 +244,7 @@ deserialize_wiringdiagram!(dwd) = begin
   dwd[:value] .= map(Symbol,dwd[:value])
   wd_acset2 = WiringDiagramACSet{Symbol,Any,Any,DataType}()
   copy_parts!(wd_acset2,dwd)
-  return WiringDiagram{ThBiproductCategory, Symbol, Any, Any}(wd_acset2, :read)
+  return WiringDiagram{ThBiproductCategory, Symbol, Any, Any}(wd_acset2, value)
 end
 rt_wd = deserialize_wiringdiagram("s2_strat_sird_age_vax.json")
 
