@@ -1,5 +1,5 @@
 module Upstream
-export presentationToLabelledPetriNet
+export presentationToLabelledPetriNet, deserialize_wiringdiagram, draw
 
 using AlgebraicPetri
 using Catlab, Catlab.Theories
@@ -11,6 +11,58 @@ using Catlab.Graphs.BasicGraphs, Catlab.Graphs.BipartiteGraphs
 using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.Programs.RelationalPrograms
+
+
+import Catlab.WiringDiagrams.DirectedWiringDiagrams: WiringDiagramACSet
+using Catlab.CategoricalAlgebra.CSets: parse_json_acset
+function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet 
+    out = T()
+    for (k,v) ∈ input
+      add_parts!(out, Symbol(k), length(v))
+    end
+    for l ∈ values(input)
+      for (i, j) ∈ enumerate(l)
+        for k ∈ keys(j) # (k,v) = j # 
+          v = j[k]
+          vtype = eltype(out[Symbol(k)])
+          if !(v isa vtype)
+            v = vtype(v)
+          end
+          set_subpart!(out, i, Symbol(k), v)
+        end
+      end
+    end
+    out
+end
+
+deserialize_wiringdiagram(filepath::String, value=nothing) = deserialize_wiringdiagram!(read_json_acset(WiringDiagramACSet{Any,Any,Any,Any}, filepath), isnothing(value) ? filepath : value)
+deserialize_wiringdiagram!(dwd, value) = begin
+  convsymbol(dwd, key) = begin
+    dwd[key] .= Symbol.(dwd[key])
+  end
+  
+  dwd[:box_type] .= Box{Symbol}
+  convsymbol(dwd, :in_port_type)
+  convsymbol(dwd, :out_port_type)
+  convsymbol(dwd, :outer_in_port_type)
+  convsymbol(dwd, :outer_out_port_type)
+  dwd[:value] .= map(Symbol,dwd[:value])
+  wd_acset2 = WiringDiagramACSet{Any,Any,Any,DataType}()
+  copy_parts!(wd_acset2,dwd)
+  return WiringDiagram{ThBiproductCategory, Any, Any, Any}(wd_acset2, value)
+end
+
+
+draw(d::WiringDiagram) = to_graphviz(d,
+    orientation=LeftToRight,
+    labels=true, label_attr=:xlabel,
+    node_attrs=Graphviz.Attributes(
+      :fontname => "Courier",
+    ),
+    edge_attrs=Graphviz.Attributes(
+      :fontname => "Courier",
+    )
+)
 
 function presentationToLabelledPetriNet(present)
     lpn = LabelledPetriNet(map(Symbol,generators(present,:Ob)))
