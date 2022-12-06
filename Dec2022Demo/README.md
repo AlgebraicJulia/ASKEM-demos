@@ -2,7 +2,7 @@
 
 The organization of this folder is the following:
 
-- `outputs` for json created by scripts
+- `outputs` for static output created by scripts
 - `scripts` for scripts meant to test out functionality
 - `wiring_diagrams` for scripts that define wiring diagrams
 - `notebooks` for Pluto or Jupyter notebooks meant for presenting
