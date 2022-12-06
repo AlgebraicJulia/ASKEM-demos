@@ -37,27 +37,27 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
         with:
           project: lib
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1'
-      - uses: julia-actions/julia-buildpkg@v1
-        with:
-          project: lib
-      - uses: julia-actions/julia-docdeploy@v1
-        with:
-          project: lib
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          julia --project=lib/docs -e '
-            using Documenter: DocMeta, doctest
-            using ASKEM
-            DocMeta.setdocmeta!(ASKEM, :DocTestSetup, :(using ASKEM); recursive=true)
-            doctest(ASKEM)'
+  # docs:
+  #   name: Documentation
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: julia-actions/setup-julia@v1
+  #       with:
+  #         version: '1'
+  #     - uses: julia-actions/julia-buildpkg@v1
+  #       with:
+  #         project: lib
+  #     - uses: julia-actions/julia-docdeploy@v1
+  #       with:
+  #         project: lib
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - run: |
+  #         julia --project=lib/docs -e '
+  #           using Documenter: DocMeta, doctest
+  #           using ASKEM
+  #           DocMeta.setdocmeta!(ASKEM, :DocTestSetup, :(using ASKEM); recursive=true)
+  #           doctest(ASKEM)'
