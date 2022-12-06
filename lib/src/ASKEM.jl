@@ -7,6 +7,7 @@ include("Interventions.jl")
 include("Interactions.jl")
 include("Stratify.jl")
 include("Ontologies.jl")
+include("Mira.jl")
 include("Oct2022Demo.jl")
 include("Upstream.jl")
 include("EpidemiologicalPetriNets.jl")
@@ -17,6 +18,7 @@ include("semagrams/Semagrams.jl")
 @reexport using .Interactions
 @reexport using .Stratify
 @reexport using .Ontologies
+@reexport using .Mira
 @reexport using .Oct2022Demo
 @reexport using .Upstream
 @reexport using .EpidemiologicalPetriNets
