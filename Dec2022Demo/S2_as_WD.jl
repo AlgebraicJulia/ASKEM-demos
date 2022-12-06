@@ -236,26 +236,11 @@ deserialize_wiringdiagram!(dwd) = begin
     dwd[key] .= Symbol.(dwd[key])
   end
   
-  # function porttypes(dwd, inout::Symbol, i::Int)
-  #   ports = (inout == :in ?
-  #     incident(dwd, i, :in_port_box) :
-  #     incident(dwd, i, :out_port_box))
-  #   map(ports) do ps
-  #     map(ps) do p
-  #       inout == :in ? dwd[p, :in_port_type] : dwd[p, :out_port_type]
-  #     end
-  #   end
-  # end
-
   dwd[:box_type] .= Box{Symbol}
   convsymbol(dwd, :in_port_type)
   convsymbol(dwd, :out_port_type)
   convsymbol(dwd, :outer_in_port_type)
   convsymbol(dwd, :outer_out_port_type)
-  # newbox(i::Int) = Box{Symbol}(Symbol(dwd[i, :value]),
-  #                             porttypes(dwd, :in, i),
-  #                             porttypes(dwd, :out, i))
-  # dwd[:value] .= map(newbox,parts(dwd, :Box))
   dwd[:value] .= map(Symbol,dwd[:value])
   wd_acset2 = WiringDiagramACSet{Symbol,Any,Any,DataType}()
   copy_parts!(wd_acset2,dwd)
