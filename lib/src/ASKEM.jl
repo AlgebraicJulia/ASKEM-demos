@@ -5,8 +5,8 @@ using Reexport
 include("PetriMTK.jl")
 include("Interventions.jl")
 include("Interactions.jl")
-include("Stratify.jl")
 include("Ontologies.jl")
+include("Stratify.jl")
 include("semagrams/Semagrams.jl")
 include("Oct2022Demo.jl")
 
