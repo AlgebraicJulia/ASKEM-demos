@@ -1,5 +1,6 @@
 module Stratify 
-export stratify, stratify_except, age_strata, StrataSpec, add_cross_terms_with_rates
+export stratify, stratify_except,stratify_typed,stratify_except_typed, 
+       age_strata, StrataSpec, add_cross_terms_with_rates
 
 using Catlab.CategoricalAlgebra
 using AlgebraicPetri
@@ -45,18 +46,26 @@ participate in infections. See the tests for more details.
 
 This works by add cross terms prior to taking a pullback.
 """
-function stratify(pn1, pn2, type_system)
-  pullback([add_cross_terms(pn, type_system) for pn in [pn1, pn2]]) |> apex
+  
+
+function stratify_typed(pn1, pn2, type_system)
+  pullback([add_cross_terms(pn, type_system) for pn in [pn1, pn2]]) |> legs |> first
 end
 
-function stratify_except(pn1, pn2, type_system)
+function stratify_except_typed(pn1, pn2, type_system)
   cross1, cross2 = map([pn1=>pn2,pn2=>pn1]) do (pn, other) 
     map(parts(dom(pn[1]),:S)) do s 
       setdiff(type_system[other[1][:T]|>collect,:tname], get(Dict(pn[2]), s, []))
     end
   end
-  stratify(pn1[1]=>cross1,pn2[1]=>cross2, type_system)
+  stratify_typed(pn1[1]=>cross1,pn2[1]=>cross2, type_system) 
 end
+
+stratify(pn1, pn2, type_system) = stratify_typed(pn1,pn2,type_system) |> dom
+
+stratify_except(pn1, pn2, type_system) = 
+  stratify_except_typed(pn1,pn2,type_system) |> dom
+
 
 
 #=

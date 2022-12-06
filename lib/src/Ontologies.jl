@@ -2,10 +2,17 @@ module Ontologies
 export infectious_ontology, vector_borne_ontology, vaccine_manufacture_ontology, strip_names
 
 using AlgebraicPetri
+using Catlab.CategoricalAlgebra
 
-function strip_names(p::LabelledPetriNet)
+function strip_names(p::AbstractLabelledPetriNet)
   map(p, Name = name -> nothing)
 end
+
+function strip_names(p::ACSetTransformation)
+  init = NamedTuple([k=>collect(v) for (k,v) in pairs(components(p))])
+  homomorphism(strip_names(dom(p)), strip_names(codom(p)), initial=init)
+end
+
 
 const infectious_ontology = LabelledPetriNet(
     [:Pop],
