@@ -2,6 +2,8 @@ using ASKEM
 using Catlab, Catlab.CategoricalAlgebra
 using AlgebraicPetri
 using Test
+# using ASKEM.Dec2022Demo: formTarget, formModelList
+using ASKEM.Upstream: presentationToLabelledPetriNet
 
 # Form ComparisonWorkflow presentation of FreeBiproductCategory
 @present ComparisonWorkflow(FreeBiproductCategory) begin
