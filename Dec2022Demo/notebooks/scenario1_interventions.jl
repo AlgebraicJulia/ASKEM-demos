@@ -103,7 +103,7 @@ policy = Dict(
 @bind init Sliders("Initial Concentrations", [string(sname(petri, i)) => 0:0.001:1 for i in 1:ns(petri)])
 
 # ╔═╡ c6c820af-1a8c-46c2-827e-547b9ab817c5
-@bind rates Sliders("Rates", [string(tname(petri, i)) => 0:0.001:1 for i in 1:nt(petri)])
+@bind rates Sliders("Rates", [string(tname(petri, i)) => 0:0.01:1 for i in 1:nt(petri)])
 
 # ╔═╡ fce68171-13a9-4af3-a012-8d8b1ce763c6
 prob = ODEProblem(model_intervened, [init..., rates...], (0.0, 50.0), []);
