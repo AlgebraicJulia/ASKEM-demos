@@ -22,6 +22,7 @@ include("Dec2022Demo.jl")
 @reexport using .Mira
 @reexport using .Oct2022Demo
 @reexport using .Upstream
+@reexport using .Dec2022Demo
 @reexport using .EpidemiologicalPetriNets
 
 end
