@@ -23,7 +23,7 @@ using OptimizationOptimisers
 
 import ASKEM.Oct2022Demo: sumvarsbyname, MakeReactionSystem
 
-using ASKEM.Upstream: presentationToLabelledPetriNet, vectorfield
+using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram, vectorfield
 using ASKEM.Dec2022Demo: formSIRD, formTVParams, solveODE, zeroVal, runControlOptim, makeK, runControlAuto, draw, sig, invsig
 
 # Form ControlWorkflow presentation of FreeBiproductCategory
