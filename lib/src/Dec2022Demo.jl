@@ -1,6 +1,42 @@
 module Dec2022Demo
 
-export formSIRD, formTVParams, solveODE, zeroVal, runControlOptim, makeK, runControlAuto, presentationToLabelledPetriNet
+export formSIRD, formTVParams, solveODE, zeroVal, runControlOptim, makeK, runControlAuto, draw, sig, invsig,
+    formInfType, augLabelledPetriNet, sirdAugStates, typeSIRD, makeMultiAge, typeAge, 
+    typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat
+
+# Common Imports
+using Catlab, Catlab.Theories
+using Catlab.CategoricalAlgebra
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
+import Catlab.CategoricalAlgebra: migrate!
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Programs.RelationalPrograms
+
+using AlgebraicPetri
+
+# Imports for S2
+using Catlab.Present
+using AlgebraicPetri: Graph
+
+# Imports for S1
+using ModelingToolkit
+using AlgebraicPetri.Epidemiology
+using AlgebraicPetri.BilayerNetworks
+        
+# using Random
+using OrdinaryDiffEq
+using Optimization
+using OptimizationOptimisers
+using LinearAlgebra    
+
+import ..Oct2022Demo: sumvarsbyname, MakeReactionSystem
+# using .Upstream: vectorfield
+    
+#*******************
+# Functions for S1 *
+#*******************
 
 function formSIRD()
     SIRD = LabelledPetriNet([:S, :I, :R, :D],
@@ -9,31 +45,6 @@ function formSIRD()
 	  :death => (:I=>:D),
 	)
     return SIRD
-end
-
-using AlgebraicPetri: vectorfield
-
-valueat(x::Number, u, t) = x
-valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
-AlgebraicPetri.vectorfield(pn::AbstractPetriNet) = begin
-    tm = TransitionMatrices(pn)
-    dt = tm.output - tm.input
-    f(du,u,p,t) = begin
-      rates = zeros(eltype(du),nt(pn))
-      # u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
-      # p_m = [p[tname(pn, i)] for i in 1:nt(pn)]
-      u_m = u
-      p_m = p
-      for i in 1:nt(pn)
-        rates[i] = valueat(p_m[i],u,t) * prod(u_m[j] ^ tm.input[i,j] for j in 1:ns(pn))
-      end
-      for j in 1:ns(pn)
-        # du[sname(pn, j)] = sum(rates[i] * dt[i,j] for i in 1:nt(pn); init = 0.0)
-        du[j] = sum(rates[i] * dt[i,j] for i in 1:nt(pn); init = 0.0)
-      end
-      return du
-    end
-    return f
 end
 
 sig(x) = 1/(1+exp(-x))
@@ -93,7 +104,6 @@ function runControlOptim(SIRD, tv_prob, p, tspan, hosp_rt, thresh_H, t_start, al
 end
 
 
-using LinearAlgebra
 function makeK(u,p)
     A = [1-p[1]*u[2] -p[1]*u[1] 0 0 2*u[1]u[2]*p[1] 0 0 0;
       p[1]*u[2] 1+p[1]*u[1]-p[2]-p[3] 0 0 0 -2*u[1]*u[2]*p[1]+u[2]*p[2]+u[2]*p[3] 0 0;
@@ -150,31 +160,183 @@ function runControlAuto(rxn,u0,p,tspan)
 
 end
 
-function presentationToLabelledPetriNet(present)
-    lpn = LabelledPetriNet(map(Symbol,generators(present,:Ob)))
-    state_idx = Dict()
-    for ii in 1:ns(lpn)
-        state_idx[sname(lpn,ii)] = ii
-    end
-    num_obs = length(generators(present,:Ob))
-    num_homs = length(generators(present,:Hom))
-    for curr_hom in generators(present,:Hom)
-        i = add_transition!(lpn, tname=Symbol(curr_hom))
-        num_args = length(args(dom(curr_hom)))
-        if num_args==1
-            add_inputs!(lpn,1,i,state_idx[Symbol(dom(curr_hom))])
-        else
-            add_inputs!(lpn,num_args,repeat([i],num_args),map(x->state_idx[Symbol(x)], args(dom(curr_hom))))
-        end
-        num_args = length(args(codom(curr_hom)))
-        if num_args==1
-            add_outputs!(lpn,1,i,state_idx[Symbol(codom(curr_hom))])
-        else
-            add_outputs!(lpn,num_args,repeat([i],num_args),map(x->state_idx[Symbol(x)], args(codom(curr_hom))))
-        end
-    end
-    return lpn
+#**********************
+# Draw wiring diagram *
+#**********************
+
+draw(d::WiringDiagram) = to_graphviz(d,
+    orientation=LeftToRight,
+    labels=true, label_attr=:xlabel,
+    node_attrs=Graphviz.Attributes(
+      :fontname => "Courier",
+    ),
+    edge_attrs=Graphviz.Attributes(
+      :fontname => "Courier",
+    )
+)
+
+#*******************
+# Functions for S2 *
+#*******************
+
+# Type system model
+types′ = LabelledPetriNet([:Pop],
+    :infect=>((:Pop, :Pop)=>(:Pop, :Pop)),
+    :disease=>(:Pop=>:Pop),
+    :strata=>(:Pop=>:Pop))
+types = map(types′, Name=name->nothing)
+
+# Load unnamed type system
+function formInfType()
+    return types
 end
+  
+# Parts of type system for ease of reference
+s, = parts(types′, :S)
+t_interact, t_disease, t_strata = parts(types′, :T)
+i_interact1, i_interact2, i_disease, i_strata = parts(types′, :I)
+o_interact1, o_interact2, o_disease, o_strata = parts(types′, :O);
+
+# SIRD model already defined in S1
+#=
+function formSIRD()
+    SIRD_aug = LabelledPetriNet([:S, :I, :R, :D],
+	  :inf => ((:S, :I)=>(:I, :I)),
+	  :rec => (:I=>:R),
+	  :death => (:I=>:D),
+	)
+    return SIRD_aug
+end
+=#
+
+# Augment a LabelledPetriNet model with identity transitions for a set of states
+function augLabelledPetriNet(lpn,states_to_aug)
+  state_idx = Dict()
+  for ii in 1:ns(lpn)
+      state_idx[sname(lpn,ii)] = ii
+  end
+  for curr_s in lpn[:sname]
+    if curr_s in states_to_aug
+      i = add_transition!(lpn, tname=:id)
+      add_inputs!(lpn, 1, i, state_idx[curr_s])
+      add_outputs!(lpn, 1, i, state_idx[curr_s])
+    end
+  end
+  return lpn
+end
+
+# Set of states to augment in SIRD
+function sirdAugStates()
+    return [:S, :I, :R]
+end
+
+
+# Typed SIRD model
+function typeSIRD(SIRD_aug, types)
+    SIRD_aug_typed = ACSetTransformation(SIRD_aug, types,
+    S = [s, s, s, s],
+    T = [t_interact, t_disease, t_disease, t_strata, t_strata, t_strata],
+    I = [i_interact1, i_interact2, i_disease, i_disease, i_strata, i_strata, i_strata],
+    O = [o_interact1, o_interact2, o_disease, o_disease, o_strata, o_strata, o_strata],
+    Name = name -> nothing 
+    )
+    @assert is_natural(SIRD_aug_typed)
+    return SIRD_aug_typed
+end
+
+# Assemble a Multi-Age augmented model
+function makeMultiAge(n;f_aug=true)
+    lstates = []
+    ltrans = []
+    for ii in 1:n
+        push!(lstates,Symbol("Age"*string(ii)))
+    end
+    for ii in 1:n
+        for jj in 1:n
+            push!(ltrans,Symbol("inf"*string(ii)*string(jj)) => ((lstates[ii],lstates[jj])=>(lstates[ii],lstates[jj])))
+        end
+    end
+    if f_aug
+        for ii in 1:n
+            push!(ltrans,Symbol("dis"*string(ii)) => ((lstates[ii])=>(lstates[ii])))
+        end
+    end
+    if f_aug
+        for ii in 1:n
+            push!(ltrans,Symbol("id"*string(ii)) => ((lstates[ii])=>(lstates[ii])))
+        end
+    end
+    MultiAge = LabelledPetriNet(lstates,ltrans...)
+end
+
+# Typed Multi-Age model
+function typeAge(MultiAge_aug,types)
+    num_ages = ns(MultiAge_aug)
+    ma_S = repeat([s],num_ages)
+    ma_T = repeat([t_interact],num_ages*num_ages)
+    ma_I = repeat([i_interact1, i_interact2],num_ages*num_ages)
+    ma_O = repeat([o_interact1, o_interact2],num_ages*num_ages)
+    for ii in 1:num_ages
+        push!(ma_T,t_disease)
+        push!(ma_I,i_disease)
+        push!(ma_O,o_disease)
+    end
+    for ii in 1:num_ages
+        push!(ma_T,t_strata)
+        push!(ma_I,i_strata)
+        push!(ma_O,o_strata)
+    end
+    MA_aug_typed = ACSetTransformation(MultiAge_aug, types,
+	  S = ma_S,
+	  T = ma_T,
+	  I = ma_I,
+	  O = ma_O,
+	  Name = name -> nothing 
+    )
+    @assert is_natural(MA_aug_typed)
+    return MA_aug_typed
+end
+
+# Function to form stratified model
+typed_stratify(typed_model1, typed_model2) =
+		Theories.compose(proj1(CategoricalAlgebra.pullback(typed_model1, typed_model2)), typed_model1)
+
+
+# Vaccination augmented model
+function formVax()
+    Vax_aug = LabelledPetriNet([:U, :V],
+	  :infuu => ((:U, :U)=>(:U, :U)),
+	  :infvu => ((:V, :U)=>(:V, :U)),
+	  :infuv => ((:U, :V)=>(:U, :V)),
+	  :infvv => ((:V, :V)=>(:V, :V)),
+	  :vax => (:U => :V),
+	)
+    return Vax_aug
+end 
+
+# Set of states to augment in Vax
+function vaxAugStates()
+    return [:U, :V]
+end
+
+# Typed Vax model
+function typeVax(Vax_aug,types)
+    Vax_aug_typed = ACSetTransformation(Vax_aug, types,
+    S = [s, s],
+    T = [t_interact, t_interact, t_interact, t_interact, t_strata, t_disease, t_disease],
+    I = [i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_disease, i_disease],
+    O = [o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_disease, o_disease],
+    Name = name -> nothing 
+    )
+    @assert is_natural(Vax_aug_typed)
+    return Vax_aug_typed
+end
+
+# Write stratified model to file as JSON
+function writeMdlStrat(mdl, file)
+  write_json_acset(dom(mdl), file)
+end
+
 
 
 end

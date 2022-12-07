@@ -12,6 +12,7 @@ include("Oct2022Demo.jl")
 include("Upstream.jl")
 include("EpidemiologicalPetriNets.jl")
 include("semagrams/Semagrams.jl")
+include("Dec2022Demo.jl")
 
 @reexport using .PetriMTK
 @reexport using .Interventions

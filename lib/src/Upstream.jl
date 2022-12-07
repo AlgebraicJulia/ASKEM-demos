@@ -1,5 +1,6 @@
 module Upstream
-export presentationToLabelledPetriNet, deserialize_wiringdiagram, draw
+
+export presentationToLabelledPetriNet, deserialize_wiringdiagram, parse_json_acset # , vectorfield
 
 using AlgebraicPetri
 using Catlab, Catlab.Theories
@@ -12,9 +13,14 @@ using Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.Programs.RelationalPrograms
 
-
 import Catlab.WiringDiagrams.DirectedWiringDiagrams: WiringDiagramACSet
 using Catlab.CategoricalAlgebra.CSets: parse_json_acset
+
+# From S1 for vectorfield
+using AlgebraicPetri.Epidemiology
+using AlgebraicPetri.BilayerNetworks
+
+
 function Catlab.CategoricalAlgebra.CSets.parse_json_acset(::Type{T}, input::AbstractDict) where T <: ACSet 
     out = T()
     for (k,v) ∈ input
@@ -53,17 +59,6 @@ deserialize_wiringdiagram!(dwd, value) = begin
 end
 
 
-draw(d::WiringDiagram) = to_graphviz(d,
-    orientation=LeftToRight,
-    labels=true, label_attr=:xlabel,
-    node_attrs=Graphviz.Attributes(
-      :fontname => "Courier",
-    ),
-    edge_attrs=Graphviz.Attributes(
-      :fontname => "Courier",
-    )
-)
-
 function presentationToLabelledPetriNet(present)
     lpn = LabelledPetriNet(map(Symbol,generators(present,:Ob)))
     state_idx = Dict()
@@ -90,8 +85,10 @@ function presentationToLabelledPetriNet(present)
     return lpn
 end
 
-valueat(x::Number, u, t) = x
-valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
+import AlgebraicPetri: vectorfield, valueat
+
+# valueat(x::Number, u, t) = x
+# valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
 AlgebraicPetri.vectorfield(pn::AbstractPetriNet) = begin
     tm = TransitionMatrices(pn)
     dt = tm.output - tm.input
