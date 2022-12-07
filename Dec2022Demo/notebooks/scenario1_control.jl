@@ -97,14 +97,20 @@ end
 # ╔═╡ be745863-ca88-49ca-bc62-553cbafaefb7
 md"""#### Without Intervention"""
 
+# ╔═╡ d797cea2-7c16-499d-8659-4ff352f8c029
+formSIRD()
+
 # ╔═╡ 4b2a1018-c683-401e-8da2-e6792c5c162b
 begin
 	free_hom_expr = to_hom_expr(FreeBiproductCategory,s1_sird_cntrl_policy)
-	free_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(free_hom_expr)
+	free_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(free_hom_expr)
 end
 
+# ╔═╡ 3fed27e7-e09c-4099-a04f-62ebf3ddac03
+
+
 # ╔═╡ 7ae8fdc8-1111-46ea-bfcc-85cbc11e73c3
-free_tv_sol = free_jfunc(u0,p_fixed,tspan,0,tstart_policy)
+free_tv_sol = eval(free_jfunc)(u0,p_fixed,tspan,0,tstart_policy)
 
 # ╔═╡ 8fddc83d-8993-4b82-b2e2-d833c8bd9f26
 md"""#### Fixed policy - 5% decrease in infection rate on first day"""
@@ -168,7 +174,9 @@ auto_tv_sol, t_auto = auto_jfunc(u0,p_fixed,tspan)
 # ╠═b323ac71-837a-4da1-ac81-05ac1ca9d600
 # ╠═6762c0ea-a453-451c-80c1-566a1389a45c
 # ╠═be745863-ca88-49ca-bc62-553cbafaefb7
+# ╠═d797cea2-7c16-499d-8659-4ff352f8c029
 # ╠═4b2a1018-c683-401e-8da2-e6792c5c162b
+# ╠═3fed27e7-e09c-4099-a04f-62ebf3ddac03
 # ╠═7ae8fdc8-1111-46ea-bfcc-85cbc11e73c3
 # ╠═8fddc83d-8993-4b82-b2e2-d833c8bd9f26
 # ╠═2f818299-058c-4e0a-ad91-09cf4899c70e
