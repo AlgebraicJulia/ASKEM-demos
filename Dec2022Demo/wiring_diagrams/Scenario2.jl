@@ -39,6 +39,12 @@ using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
     typed_stratify::Hom(MdlTyped⊗MdlTyped,MdlTyped)
 
     writeMdlStrat::Hom(MdlTyped⊗File,munit())
+
+    loadSVIIvR::Hom(File,LPN)
+    sviivrAugStates::Hom(munit(),AugStates)
+    typeSVIIvR::Hom(MdlAug⊗MdlType,MdlTyped) 
+    
+    loadBucky::Hom(File,LPN)
  end
 
 # Form wiring diagram of load_stratify_calibrate_control Workflow
@@ -119,3 +125,26 @@ swf_lpn = presentationToLabelledPetriNet(StratificationWorkflow)
 write_json_acset(swf_lpn,"s2_strat_wf_present.json")
 
 # lpn_rt = read_json_acset(LabelledPetriNet,"s1_cntrl_wf_present.json")
+
+
+#**************
+stratify_sviivr_age = @program StratificationWorkflow (num_ages::NumStrat, out_file::File) begin #
+    # Form models
+    mdl_sviivr = formSVIIvR()
+    mdl_type = formInfType()
+    mdl_age_aug = makeMultiAge(num_ages)
+
+    # Augment models
+    sviivr_aug_states = sviivrAugStates()
+    mdl_sviivr_aug = augLabelledPetriNet(mdl_sviivr,sviivr_aug_states)
+    
+    # Specify types of models
+    mdl_sviivr_typed = typeSVIIvR(mdl_sviivr_aug,mdl_type)
+    mdl_age_typed = typeAge(mdl_age_aug,mdl_type)
+    
+    # Stratify models
+    mdl_sviivr_age = typed_stratify(mdl_sviivr_typed, mdl_age_typed)
+
+    # Write stratified model to file
+    writeMdlStrat(mdl_sviivr_age, out_file)
+end
