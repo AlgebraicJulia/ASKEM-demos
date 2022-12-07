@@ -109,16 +109,7 @@ policy = Dict(
 prob = ODEProblem(model_intervened, [init..., rates...], (0.0, 50.0), []);
 
 # ╔═╡ 66f0ce87-2c08-4ad7-838b-56f9ed5029ac
-plot(solve(prob))
-
-# ╔═╡ 7e16d79d-1d1b-4003-9db2-de8de296a40f
-md"""
-Thoughts about the SIR model:
-
-As long as I > 0 and inf > 0, the SIR model always says that S -> 0 eventually. Thus, the SIR model projects that lockdowns are ultimately useless except for lengthening the period over which people are infected. It does not account for the possibility of local eradication, where "burned over patches" of people who have been sick "firestop" transmission into some communities who never have covid introduced to them, which is a mechanism used to attempt to partially explain why covid infections come in waves.
-
-Modeling this will need an agent-based, spatial model, and I expect that we might get interestingly different results from this.
-"""
+plot(solve(prob), leg=:outertop)
 
 # ╔═╡ Cell order:
 # ╠═82d23846-7045-11ed-152b-49bacb843ba4
@@ -139,4 +130,3 @@ Modeling this will need an agent-based, spatial model, and I expect that we migh
 # ╠═c6c820af-1a8c-46c2-827e-547b9ab817c5
 # ╠═fce68171-13a9-4af3-a012-8d8b1ce763c6
 # ╠═66f0ce87-2c08-4ad7-838b-56f9ed5029ac
-# ╟─7e16d79d-1d1b-4003-9db2-de8de296a40f
