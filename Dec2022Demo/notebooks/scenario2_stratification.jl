@@ -57,27 +57,6 @@ begin
 	AlgebraicPetri.Graph(StratificationWorkflow_lpn)
 end
 
-# ╔═╡ 4f0e0aa0-fc1d-4519-ada1-d3dcde9550ba
-@present StratificationWorkflow(FreeBiproductCategory) begin
-    (LPN,MdlAug,MdlType,MdlTyped,NumStrat,AugStates,File)::Ob
-    
-    formSIRD::Hom(munit(),LPN)
-    formVax::Hom(munit(),LPN)
-    formInfType::Hom(munit(),MdlType)
-    makeMultiAge::Hom(NumStrat,MdlAug)
-
-    sirdAugStates::Hom(munit(),AugStates)
-    vaxAugStates::Hom(munit(),AugStates)
-    augLabelledPetriNet::Hom(LPN⊗AugStates,MdlAug)
-
-    typeSIRD::Hom(MdlAug⊗MdlType,MdlTyped)
-    typeAge::Hom(MdlAug⊗MdlType,MdlTyped)
-    typeVax::Hom(MdlAug⊗MdlType,MdlTyped)
-    typed_stratify::Hom(MdlTyped⊗MdlTyped,MdlTyped)
-
-    writeMdlStrat::Hom(MdlTyped⊗File,munit())
- end
-
 # ╔═╡ 6762c0ea-a453-451c-80c1-566a1389a45c
 begin
 	stratify_sird_age_vax = deserialize_wiringdiagram("../s2_strat_sird_age_vax.json")
@@ -106,7 +85,6 @@ md"""### SVIIvR Disease Model"""
 # ╠═c7535760-7c2d-4552-a39a-7b51af04a92f
 # ╠═61a6b383-b9e2-4acf-8bb7-0fa926a0ec12
 # ╠═b323ac71-837a-4da1-ac81-05ac1ca9d600
-# ╠═4f0e0aa0-fc1d-4519-ada1-d3dcde9550ba
 # ╠═6762c0ea-a453-451c-80c1-566a1389a45c
 # ╠═bb368013-7b99-4b2d-84e1-d22466983a74
 # ╠═505cd6b7-f26c-42e0-812b-6962255d3648
