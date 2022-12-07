@@ -56,6 +56,9 @@ petri_options = [
 # ╔═╡ 9ea0277f-ed20-44e8-bbf2-16e8815ee65b
 @bind petri Select(petri_options)
 
+# ╔═╡ 37886a74-2a25-44fa-9ae5-c7f0816d64ce
+AlgebraicPetri.Graph(petri)
+
 # ╔═╡ f62b4be9-9da4-41c9-a6e4-7da5653403e7
 @named model = ASKEM.PetriMTK.rate_equation(petri)
 
@@ -123,6 +126,7 @@ Modeling this will need an agent-based, spatial model, and I expect that we migh
 # ╟─82c9f255-41c2-4933-b31b-6558f9243495
 # ╟─62b804b2-d355-42fb-8e4c-f5eb9eed1696
 # ╠═9ea0277f-ed20-44e8-bbf2-16e8815ee65b
+# ╠═37886a74-2a25-44fa-9ae5-c7f0816d64ce
 # ╠═f62b4be9-9da4-41c9-a6e4-7da5653403e7
 # ╟─a437c4ce-f5ae-43bb-ac44-c14141fe368a
 # ╟─620e4c0e-b5af-412b-8a96-b758cb5387f9

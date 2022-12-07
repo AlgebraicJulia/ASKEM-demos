@@ -5,7 +5,7 @@ using HypertextLiteral
 using PlutoUI
 
 render_slider(Child, name, range) =
-  @htl("""<tr><td>$name</td><td>$(Child(Slider(range)))</td></tr>""")
+  @htl("""<tr><td>$name</td><td>$(Child(Slider(range, show_value=true)))</td></tr>""")
 
 function Sliders(title, vars)
   PlutoUI.combine() do Child
