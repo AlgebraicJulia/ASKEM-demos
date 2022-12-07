@@ -2,7 +2,8 @@ module Dec2022Demo
 
 export formSIRD, formTVParams, solveODE, zeroVal, runControlOptim, makeK, runControlAuto, draw, sig, invsig,
     formInfType, augLabelledPetriNet, sirdAugStates, typeSIRD, makeMultiAge, typeAge, 
-    typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat
+    typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat,
+    formAugSIR, formAugSIRD, formAugSIRD2, formAugQuarantine, altTypeSIR, altTypeSIRD, altTypeSIRD2, altTypeQuarantine, formTarget, formModelList
 
 # Common Imports
 using Catlab, Catlab.Theories
@@ -368,5 +369,86 @@ function loadBucky(filepath)
     migrate!(lpn_bucky,lbn_bucky)
     return lpn_bucky
 end
+
+#*******************
+# Functions for S3 *
+#*******************
+
+function formAugSIR()
+    SIR = LabelledPetriNet([:S, :I, :R],
+    :inf => ((:S,:I) => (:I,:I)),
+    :recover => (:I=>:R),
+    :id => (:S=>:S), :id=>(:I=>:I),:id=>(:R=>:R))
+    return SIR
+end    
+function formAugSIRD()
+    SIRD = LabelledPetriNet([:S, :I, :R, :D],
+    :inf => ((:S,:I) => (:I,:I)),
+    :recover => (:I=>:R),
+    :death => (:I=>:D),
+    :id => (:S=>:S), :id=>(:I=>:I),:id=>(:R=>:R))
+    return SIRD
+end
+
+function formAugSIRD2()
+    SIRD2 = LabelledPetriNet([:Sus, :Inf, :Dea, :Rec],
+    :d => (:Inf=>:Dea),
+    :i => ((:Sus,:Inf) => (:Inf,:Inf)),
+    :r => (:Inf=>:Rec),
+    :id => (:Sus=>:Sus), :id=>(:Inf=>:Inf),:id=>(:Rec=>:Rec))
+    return SIRD2
+end
+
+function formAugQuarantine()
+    Quarantine = LabelledPetriNet([:Q,:NQ],
+    :inf => ((:NQ,:NQ)=>(:NQ,:NQ)),
+    :id=>((:Q)=>(:Q)), 
+    :id => ((:NQ) => (:NQ)),
+    :quarantine => ((:NQ)=>(:Q)),
+    :unquarantine => ((:Q)=>(:NQ)))
+    return Quarantine
+end
+
+function altTypeSIR(SIR)
+    SIR_typed = homomorphism(SIR, strip_names(infectious_ontology);
+    initial=(T=[1,2,3,3,3],I=[1,2,3,4,4,4],O=[1,2,3,4,4,4]),
+    type_components=(Name=x->nothing,))
+    return SIR_typed
+end
+
+function altTypeSIRD(SIRD)
+    SIRD_typed = homomorphism(SIRD, strip_names(infectious_ontology);
+    initial=(T=[1,2,2,3,3,3],I=[1,2,3,3,4,4,4],O=[1,2,3,3,4,4,4]),
+    type_components=(Name=x->nothing,))
+    return SIRD_typed
+end
+
+function altTypeSIRD2(SIRD2)
+    SIRD2_typed = homomorphism(SIRD2, strip_names(infectious_ontology);
+    initial=(T=[2,1,2,3,3,3],I=[3,1,2,3,4,4,4],O=[3,1,2,3,4,4,4]),
+    type_components=(Name=x->nothing,))
+    return SIRD2_typed
+end
+
+function altTypeQuarantine(Quarantine)
+    Quarantine_typed = homomorphism(Quarantine, strip_names(infectious_ontology);
+    initial=(T=[1,2,2,3,3],I=Dict(1=>1,2=>2),O=Dict(1=>1,2=>2)), 
+    type_components=(Name=x->nothing,))
+    return Quarantine_typed
+end
+
+
+
+
+
+
+function formTarget(tm1,tm2)
+    return first(legs(pullback(tm1, tm2))) ⋅ tm1
+end
+
+function formModelList(tm1,tm2,tm3,tm4)
+    return [tm1,tm2,tm3,tm4]
+end
+
 
 end

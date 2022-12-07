@@ -66,9 +66,14 @@ end
 # ╔═╡ bb368013-7b99-4b2d-84e1-d22466983a74
 begin 
 	stratify_sird_hom_expr = to_hom_expr(FreeBiproductCategory, stratify_sird_age_vax)
-	stratify_sird_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(stratify_sird_hom_expr)
-	stratify_sird_jfunc(7,"sird_age7_vax.json")
-end 
+	stratify_sird_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(stratify_sird_hom_expr)
+end;
+
+# ╔═╡ 80bb3bb1-03e9-450c-ba96-18ea19a29a6d
+eval(stratify_sird_jfunc)(7,"sird_age7_vax.json")
+
+# ╔═╡ b602a85d-6792-4d93-b050-e901de024f5d
+AlgebraicPetri.Graph(dom(SIRD_AGE_Vax))
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
 md"""### SVIIvR Disease Model"""
@@ -87,5 +92,7 @@ md"""### SVIIvR Disease Model"""
 # ╠═b323ac71-837a-4da1-ac81-05ac1ca9d600
 # ╠═6762c0ea-a453-451c-80c1-566a1389a45c
 # ╠═bb368013-7b99-4b2d-84e1-d22466983a74
+# ╠═80bb3bb1-03e9-450c-ba96-18ea19a29a6d
+# ╠═b602a85d-6792-4d93-b050-e901de024f5d
 # ╠═505cd6b7-f26c-42e0-812b-6962255d3648
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008

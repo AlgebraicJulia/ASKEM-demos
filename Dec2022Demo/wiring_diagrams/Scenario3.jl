@@ -1,50 +1,54 @@
-using ASKEM
-using Catlab, Catlab.CategoricalAlgebra
+using Catlab, Catlab.Theories
+using Catlab.CategoricalAlgebra
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
+import Catlab.CategoricalAlgebra: migrate!
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Programs.RelationalPrograms
+
+using Catlab.Present
 using AlgebraicPetri
+using AlgebraicPetri: Graph
+
+using ASKEM
 using Test
-# using ASKEM.Dec2022Demo: formTarget, formModelList
-using ASKEM.Upstream: presentationToLabelledPetriNet
+using ASKEM.Ontologies: infectious_ontology
+using ASKEM.Dec2022Demo: formAugSIR, formAugSIRD, formAugSIRD2, formAugQuarantine, altTypeSIR, altTypeSIRD, altTypeSIRD2, altTypeQuarantine, formTarget, formModelList
+using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
 
 # Form ComparisonWorkflow presentation of FreeBiproductCategory
 @present ComparisonWorkflow(FreeBiproductCategory) begin
-    (LPN,TypedMdl,TypedMdlList)::Ob 
+    (MdlAug,MdlTyped,MdlTypedList)::Ob 
 
-    formSIR::Hom(munit(),LPN)
-    formSIRD::Hom(munit(),LPN)
-    formSIRD2::Hom(munit(),LPN)
-    formQuarantine::Hom(munit(),LPN)
+    formAugSIR::Hom(munit(),MdlAug)
+    formAugSIRD::Hom(munit(),MdlAug)
+    formAugSIRD2::Hom(munit(),MdlAug)
+    formAugQuarantine::Hom(munit(),MdlAug)
     
-    altTypeSIR::Hom(LPN,TypedMdl)
-    altTypeSIRD::Hom(LPN,TypedMdl)
-    altTypeSIRD2::Hom(LPN,TypedMdl)
-    altTypeQuarantine::Hom(LPN,TypedMdl)
+    altTypeSIR::Hom(MdlAug,MdlTyped)
+    altTypeSIRD::Hom(MdlAug,MdlTyped)
+    altTypeSIRD2::Hom(MdlAug,MdlTyped)
+    altTypeQuarantine::Hom(MdlAug,MdlTyped)
 
-    formTarget::Hom(TypedMdl⊗TypedMdl,TypedMdl)
-    formModelList::Hom(TypedMdl⊗TypedMdl⊗TypedMdl⊗TypedMdl,TypedMdlList)
+    formTarget::Hom(MdlTyped⊗MdlTyped,MdlTyped)
+    formModelList::Hom(MdlTyped⊗MdlTyped⊗MdlTyped⊗MdlTyped,MdlTypedList)
 
-    decompose::Hom(TypedMdl⊗TypedMdlList)    
-end
-
-function formTarget(tm1,tm2)
-    return first(legs(pullback(tm1, tm2))) ⋅ tm1
-end
-
-function formModelList(tm1,tm2,tm3,tm4)
-    return [tm1,tm2,tm3,tm4]
+    decompose::Hom(MdlTyped⊗MdlTypedList,MdlTypedList)    
 end
 
 # Wiring diagram of comparison example
-s3_find_sird_q_components = @program ComparisonWorkflow () begin 
-    SIR = formSIR()
-    SIRD = formSIRD()
-    SIRD2 = formSIRD2()
-    Quarantine = formQuarantine()
-    SIR_typed = altTypeSIR(SIR,TypedMdl)
-    SIRD_typed = altTypeSIRD(SIRD,TypedMdl)
-    SIRD2_typed = altTypeSIRD2(SIRD2,TypedMdl)
-    Quarantine = altTypeQuarantine(Quarantine,TypedMdl)
+find_sird_q_components = @program ComparisonWorkflow () begin 
+    SIR = formAugSIR()
+    SIRD = formAugSIRD()
+    SIRD2 = formAugSIRD2()
+    Quarantine = formAugQuarantine()
+    SIR_typed = altTypeSIR(SIR)
+    SIRD_typed = altTypeSIRD(SIRD)
+    SIRD2_typed = altTypeSIRD2(SIRD2)
+    Quarantine_typed = altTypeQuarantine(Quarantine)
 
-    tgt_mdl = formTarget(SIRD_typed,Quarantine_Typed)
+    tgt_mdl = formTarget(SIRD_typed,Quarantine_typed)
     mdl_list = formModelList(SIR_typed,SIRD_typed,Quarantine_typed,SIRD2_typed)
 
     res = decompose(tgt_mdl,mdl_list)
@@ -58,6 +62,6 @@ end
 Footer
 =#
 
-write_json_acset(s3_find_sird_q_components.diagram, "s3_find_sird_q.json")
+write_json_acset(find_sird_q_components.diagram, "s3_find_sird_q.json")
 cwf_lpn = presentationToLabelledPetriNet(ComparisonWorkflow)
 write_json_acset(cwf_lpn,"s3_compar_wf_present.json")
