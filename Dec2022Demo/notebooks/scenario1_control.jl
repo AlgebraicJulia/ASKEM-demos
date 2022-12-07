@@ -97,20 +97,17 @@ end
 # ╔═╡ be745863-ca88-49ca-bc62-553cbafaefb7
 md"""#### Without Intervention"""
 
-# ╔═╡ d797cea2-7c16-499d-8659-4ff352f8c029
-formSIRD()
-
 # ╔═╡ 4b2a1018-c683-401e-8da2-e6792c5c162b
 begin
 	free_hom_expr = to_hom_expr(FreeBiproductCategory,s1_sird_cntrl_policy)
 	free_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(free_hom_expr)
-end
-
-# ╔═╡ 3fed27e7-e09c-4099-a04f-62ebf3ddac03
-
+end;
 
 # ╔═╡ 7ae8fdc8-1111-46ea-bfcc-85cbc11e73c3
-free_tv_sol = eval(free_jfunc)(u0,p_fixed,tspan,0,tstart_policy)
+free_tv_sol = eval(free_jfunc)(u0,p_fixed,tspan,invsig(10^-8),tstart_policy);
+
+# ╔═╡ 7dde087a-414f-4d43-89e6-23439f58e093
+plot(free_tv_sol)
 
 # ╔═╡ 8fddc83d-8993-4b82-b2e2-d833c8bd9f26
 md"""#### Fixed policy - 5% decrease in infection rate on first day"""
@@ -118,11 +115,14 @@ md"""#### Fixed policy - 5% decrease in infection rate on first day"""
 # ╔═╡ 2f818299-058c-4e0a-ad91-09cf4899c70e
 begin 
 	policy_hom_expr = to_hom_expr(FreeBiproductCategory,s1_sird_cntrl_policy)
-	policy_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(policy_hom_expr)
-end
+	policy_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(policy_hom_expr)
+end;
 
 # ╔═╡ 28d7e1e3-4ecd-4c8c-9ddc-7cb6510c28b8
-policy_tv_sol = policy_jfunc(u0,p_fixed,tspan,alpha_policy,tstart_policy)
+policy_tv_sol = eval(policy_jfunc)(u0,p_fixed,tspan,alpha_policy,tstart_policy);
+
+# ╔═╡ 1504332f-7ede-42c3-90ba-23f39bef639b
+plot(policy_tv_sol)
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
 md"""### Control via optimization - keep hospitalizations under 125 w/ decrease starting day 200"""
@@ -136,11 +136,17 @@ end
 # ╔═╡ 4d731c25-b931-4f70-96e7-bbe231b29db0
 begin
 	optim_hom_expr = to_hom_expr(FreeBiproductCategory,s1_sird_cntrl_optim)
-	optim_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(optim_hom_expr)
-end
+	optim_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(optim_hom_expr)
+end;
 
 # ╔═╡ 2f16a5a7-8ca5-43bc-aa29-1436d4e68fe0
-alpha, optim_tv_sol, t, obs_hosp = 	optim_jfunc(u0,p_fixed,tspan,hosp_rt,thresh_H,t_start,alpha_init)
+alpha, optim_tv_sol, t, obs_hosp = 	eval(optim_jfunc)(u0,p_fixed,tspan,hosp_rt,thresh_H,t_start,alpha_init);
+
+# ╔═╡ 0b92d72e-64f7-4499-8286-1ffb9fd26abf
+plot(optim_tv_sol)
+
+# ╔═╡ b24e11ce-b767-4974-ab67-ce0bb442ab4c
+sig(alpha)
 
 # ╔═╡ 7366703c-7976-4cc0-ab6e-da39054270d9
 md"""### Automated LQR control"""
@@ -154,11 +160,14 @@ end
 # ╔═╡ dc8b5de5-721b-4f7f-ad2d-c9e0a077d18e
 begin
 	auto_hom_expr = to_hom_expr(FreeBiproductCategory,s1_sird_cntrl_auto)
-	auto_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(auto_hom_expr)
-end
+	auto_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(auto_hom_expr)
+end;
 
 # ╔═╡ 7f5c4e33-1c8b-41a1-ba73-52d3643fa008
-auto_tv_sol, t_auto = auto_jfunc(u0,p_fixed,tspan)
+auto_tv_sol, t_auto = eval(auto_jfunc)(u0,p_fixed,tspan);
+
+# ╔═╡ b0b6c39f-763d-4cf2-8703-116d35de8c12
+plot(t_auto,auto_tv_sol')
 
 # ╔═╡ Cell order:
 # ╠═9aec393e-a083-45f5-ad73-e6bef22bb056
@@ -174,18 +183,21 @@ auto_tv_sol, t_auto = auto_jfunc(u0,p_fixed,tspan)
 # ╠═b323ac71-837a-4da1-ac81-05ac1ca9d600
 # ╠═6762c0ea-a453-451c-80c1-566a1389a45c
 # ╠═be745863-ca88-49ca-bc62-553cbafaefb7
-# ╠═d797cea2-7c16-499d-8659-4ff352f8c029
 # ╠═4b2a1018-c683-401e-8da2-e6792c5c162b
-# ╠═3fed27e7-e09c-4099-a04f-62ebf3ddac03
 # ╠═7ae8fdc8-1111-46ea-bfcc-85cbc11e73c3
+# ╠═7dde087a-414f-4d43-89e6-23439f58e093
 # ╠═8fddc83d-8993-4b82-b2e2-d833c8bd9f26
 # ╠═2f818299-058c-4e0a-ad91-09cf4899c70e
 # ╠═28d7e1e3-4ecd-4c8c-9ddc-7cb6510c28b8
+# ╠═1504332f-7ede-42c3-90ba-23f39bef639b
 # ╠═505cd6b7-f26c-42e0-812b-6962255d3648
 # ╠═f5a2b608-d8ea-4cfa-bc53-80ee170443eb
 # ╠═4d731c25-b931-4f70-96e7-bbe231b29db0
 # ╠═2f16a5a7-8ca5-43bc-aa29-1436d4e68fe0
+# ╠═0b92d72e-64f7-4499-8286-1ffb9fd26abf
+# ╠═b24e11ce-b767-4974-ab67-ce0bb442ab4c
 # ╠═7366703c-7976-4cc0-ab6e-da39054270d9
 # ╠═bb48c3e5-5ba0-47f0-8df7-a4a90863dad9
 # ╠═dc8b5de5-721b-4f7f-ad2d-c9e0a077d18e
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008
+# ╠═b0b6c39f-763d-4cf2-8703-116d35de8c12
