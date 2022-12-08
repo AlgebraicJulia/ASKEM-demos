@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.12
+# v0.19.13
 
 using Markdown
 using InteractiveUtils
@@ -49,6 +49,9 @@ end
 # ╔═╡ c7535760-7c2d-4552-a39a-7b51af04a92f
 md"""### Age Model"""
 
+# ╔═╡ 20fe503a-ddd2-4142-811a-0e6b81f13975
+makeMultiAge(3) |> AlgebraicPetri.Graph
+
 # ╔═╡ 61a6b383-b9e2-4acf-8bb7-0fa926a0ec12
 md"""### Vaccination Model"""
 
@@ -78,22 +81,16 @@ begin
 	SIRD_Age_Vax_rt = read_json_acset(AlgebraicPetri.LabelledPetriNetUntyped{Vector},joinpath(idirpath,"sird_age7_vax.json"))
 end;
 
+# ╔═╡ d6daa705-50b7-4a85-afd0-95a6b6d49697
 map(SIRD_Age_Vax_rt, Name=x->Symbol.(flatten(x))) |> AlgebraicPetri.Graph
+
 # ╔═╡ e925f14d-d85a-4316-9703-3bdc956b50d7
-#=begin
-	Pkg.add("Images")
-	using Images
-	using Plots
-	img_path = joinpath(idirpath,"sird_age7_vax.svg")
-	img_data = load(img_path)
-	plot(img_data)
-end=#
+ratenames = map(SIRD_Age_Vax_rt, Name=x->Symbol.(flatten(x))) |> x->x[:tname]
 
-# ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
-md"""### SVIIvR Disease Model"""
-
-# ╔═╡ 7f5c4e33-1c8b-41a1-ba73-52d3643fa008
-
+# ╔═╡ c1790e5c-c89c-4da7-9fdf-d25fbc699104
+for i in 1:10
+	println(ratenames[i])
+end
 
 # ╔═╡ Cell order:
 # ╠═9aec393e-a083-45f5-ad73-e6bef22bb056
@@ -102,6 +99,7 @@ md"""### SVIIvR Disease Model"""
 # ╠═943d7c37-ade5-4a4d-ae0b-e2bf390fcf6f
 # ╠═85ddcf05-c9c5-4436-8511-3713dbbe7694
 # ╠═c7535760-7c2d-4552-a39a-7b51af04a92f
+# ╠═20fe503a-ddd2-4142-811a-0e6b81f13975
 # ╠═61a6b383-b9e2-4acf-8bb7-0fa926a0ec12
 # ╠═b323ac71-837a-4da1-ac81-05ac1ca9d600
 # ╠═6762c0ea-a453-451c-80c1-566a1389a45c
@@ -110,5 +108,4 @@ md"""### SVIIvR Disease Model"""
 # ╠═b602a85d-6792-4d93-b050-e901de024f5d
 # ╠═d6daa705-50b7-4a85-afd0-95a6b6d49697
 # ╠═e925f14d-d85a-4316-9703-3bdc956b50d7
-# ╠═505cd6b7-f26c-42e0-812b-6962255d3648
-# ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008
+# ╠═c1790e5c-c89c-4da7-9fdf-d25fbc699104
