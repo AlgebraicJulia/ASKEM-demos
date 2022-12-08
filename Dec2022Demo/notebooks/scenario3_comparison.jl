@@ -59,7 +59,8 @@ md"""#### ComparisonWorkflow Presentaion"""
 
 # ╔═╡ b323ac71-837a-4da1-ac81-05ac1ca9d600
 begin
-	ComparisonWorkflow_lpn = read_json_acset(LabelledPetriNet,"../s3_compar_wf_present.json")
+	idirpath_wd = joinpath(@__DIR__,"../outputs")
+	ComparisonWorkflow_lpn = read_json_acset(LabelledPetriNet,joinpath(idirpath_wd,"s3_compar_wf_present.json"))
 	AlgebraicPetri.Graph(ComparisonWorkflow_lpn)
 end
 
@@ -68,7 +69,7 @@ md"""#### Wiring Diagram of Program to Find SIRD and Quarantine Components of Pr
 
 # ╔═╡ 6762c0ea-a453-451c-80c1-566a1389a45c
 begin
-	find_sird_q_components = deserialize_wiringdiagram("../s3_find_sird_q.json")
+	find_sird_q_components = deserialize_wiringdiagram(joinpath(idirpath_wd,"s3_find_sird_q.json"))
 	draw(find_sird_q_components)
 end
 
@@ -138,7 +139,8 @@ One such net may be the **SIR model** shown below.  """
 
 # ╔═╡ 791d1b45-0cf0-4fdd-870c-874ed13eb78b
 begin
-	sir = read_json_acset(LabelledPetriNet, "../../data/SIR.json")
+	idirpath_mdl = joinpath(@__DIR__,"../../data")
+	sir = read_json_acset(LabelledPetriNet,joinpath(idirpath_mdl,"SIR.json"))
 	AlgebraicPetri.Graph(sir)
 end
 
@@ -147,7 +149,7 @@ md"""Another such Petri net might be the **SIS model**. We've drawn it below."""
 
 # ╔═╡ d4a49ab0-9a7c-4dfd-ae24-b31502a77ec2
 begin
-	sis    = read_json_acset(LabelledPetriNet, "../../data/SIS.json")
+	sis    = read_json_acset(LabelledPetriNet,joinpath(idirpath_mdl,"SIS.json"))
 	AlgebraicPetri.Graph(sis)
 end
 

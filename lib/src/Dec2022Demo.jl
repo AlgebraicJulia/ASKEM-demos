@@ -432,15 +432,16 @@ end
 function typeSVIIvR(SVIIvR_aug, types)
     SVIIvR_aug_typed = ACSetTransformation(SVIIvR_aug, types,
     S = [s, s, s, s, s],
-    T = [t_interact, t_disease, t_disease, t_strata, t_strata, t_strata],
-    I = [i_interact1, i_interact2, i_disease, i_disease, i_strata, i_strata, i_strata],
-    O = [o_interact1, o_interact2, o_disease, o_disease, o_strata, o_strata, o_strata],
+    T = [t_interact, t_interact, t_strata, t_interact, t_interact, t_strata, t_strata, t_disease, t_disease, t_disease, t_disease, t_disease],
+    I = [i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_strata, i_strata, i_disease, i_disease, i_disease, i_disease, i_disease],
+    O = [o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_strata, o_strata, o_disease, o_disease, o_disease, o_disease, o_disease],
     Name = name -> nothing 
     )
     @assert is_natural(SVIIvR_aug_typed)
     return SVIIvR_aug_typed
 end
 
+#=
 function loadBucky(filepath)
     # "../data/Bucky_SEIIIRRD_BiLayer_v3.json"
     lbn_bucky = read_json_acset(LabelledBilayerNetwork,filepath)
@@ -448,6 +449,7 @@ function loadBucky(filepath)
     migrate!(lpn_bucky,lbn_bucky)
     return lpn_bucky
 end
+=#
 
 #*******************
 # Functions for S3 *
