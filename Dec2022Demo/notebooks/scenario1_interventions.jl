@@ -100,7 +100,7 @@ policy = Dict(
 @named model_intervened = ModelingToolkit.compose(policy, model);
 
 # ╔═╡ bbc73193-584e-4681-b30f-e6b19438eae7
-@bind init Sliders("Initial Concentrations", [string(sname(petri, i)) => 0:0.001:1 for i in 1:ns(petri)])
+@bind init Sliders("Initial Concentrations", [string(sname(petri, i)) => 0:0.01:1 for i in 1:ns(petri)])
 
 # ╔═╡ c6c820af-1a8c-46c2-827e-547b9ab817c5
 @bind rates Sliders("Rates", [string(tname(petri, i)) => 0:0.01:1 for i in 1:nt(petri)])
@@ -124,7 +124,7 @@ plot(solve(prob), leg=:outertop)
 # ╟─f1f9107d-836f-4807-98d0-08a96e9b6a5e
 # ╠═e821e0fe-16fe-4320-8ea7-2d4dd91f3cb9
 # ╟─e542286b-bfa8-43d9-b150-6476d5580825
-# ╟─ceda9aac-6e23-4606-9233-d76758d0913f
+# ╠═ceda9aac-6e23-4606-9233-d76758d0913f
 # ╠═b895c52e-1592-4905-a38c-7c9d70b92509
 # ╠═bbc73193-584e-4681-b30f-e6b19438eae7
 # ╠═c6c820af-1a8c-46c2-827e-547b9ab817c5
