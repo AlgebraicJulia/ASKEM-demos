@@ -24,7 +24,7 @@ begin
 
 	using ASKEM.Dec2022Demo: formSIRD, formInfType, augLabelledPetriNet, sirdAugStates, typeSIRD, makeMultiAge, typeAge, typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat, draw
 	using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
-
+	using Base.Iterators
 end
 
 # ╔═╡ 1df5e4a8-e761-4767-aed4-866534398922
@@ -75,9 +75,10 @@ eval(stratify_sird_jfunc)(7,joinpath(idirpath,"sird_age7_vax.json"));
 
 # ╔═╡ b602a85d-6792-4d93-b050-e901de024f5d
 begin
-	SIRD_Age_Vax_rt = read_json_acset(LabelledPetriNet,joinpath(idirpath,"sird_age7_vax.json"))
+	SIRD_Age_Vax_rt = read_json_acset(AlgebraicPetri.LabelledPetriNetUntyped{Vector},joinpath(idirpath,"sird_age7_vax.json"))
 end;
 
+map(SIRD_Age_Vax_rt, Name=x->Symbol.(flatten(x))) |> AlgebraicPetri.Graph
 # ╔═╡ e925f14d-d85a-4316-9703-3bdc956b50d7
 #=begin
 	Pkg.add("Images")
@@ -107,6 +108,7 @@ md"""### SVIIvR Disease Model"""
 # ╠═bb368013-7b99-4b2d-84e1-d22466983a74
 # ╠═80bb3bb1-03e9-450c-ba96-18ea19a29a6d
 # ╠═b602a85d-6792-4d93-b050-e901de024f5d
+# ╠═d6daa705-50b7-4a85-afd0-95a6b6d49697
 # ╠═e925f14d-d85a-4316-9703-3bdc956b50d7
 # ╠═505cd6b7-f26c-42e0-812b-6962255d3648
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008
