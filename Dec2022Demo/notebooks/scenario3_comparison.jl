@@ -24,7 +24,7 @@ begin
 	
 	using ASKEM
 	using Test
-	using ASKEM.Ontologies: infectious_ontology
+	using ASKEM.Ontologies: infectious_ontology, strip_names
 	using ASKEM.Dec2022Demo: formAugSIR, formAugSIRD, formAugSIRD2, formAugQuarantine, altTypeSIR, altTypeSIRD, altTypeSIRD2, altTypeQuarantine, formTarget, formModelList
 	using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
 
@@ -85,7 +85,7 @@ md"""### Plot Identified Components """
 AlgebraicPetri.Graph(dom(SIRD_AGE_Vax))
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
-md"""### Maximal Common Subgra"""
+md"""### Maximal Common Subgraph"""
 
 # ╔═╡ 7f5c4e33-1c8b-41a1-ba73-52d3643fa008
 

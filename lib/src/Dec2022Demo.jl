@@ -32,6 +32,7 @@ using Optimization
 using OptimizationOptimisers
 using LinearAlgebra    
 
+using ..Ontologies: strip_names, infectious_ontology
 import ..Oct2022Demo: sumvarsbyname, MakeReactionSystem
 # using .Upstream: vectorfield
     
@@ -105,7 +106,7 @@ function runControlOptim(SIRD, tv_prob, p, tspan, hosp_rt, thresh_H, t_start, al
 end
 
 
-function makeK(u,p)
+#=function makeK(u,p)
     A = [1-p[1]*u[2] -p[1]*u[1] 0 0 2*u[1]u[2]*p[1] 0 0 0;
       p[1]*u[2] 1+p[1]*u[1]-p[2]-p[3] 0 0 0 -2*u[1]*u[2]*p[1]+u[2]*p[2]+u[2]*p[3] 0 0;
       0 p[2] 1 0 0 0 -p[2]*u[2] 0;
@@ -135,6 +136,52 @@ function makeK(u,p)
   
     PN = Q + A'*Qf*A - A'*Qf*B*inv(R+B'*Qf*B)*B'*Qf*A
     return K = inv(R + B'*PN*B)*B'*PN*A  
+  end=#
+
+  function makeK(u,p)
+    A = [1-p[1]*u[2] -p[1]*u[1] 0 0 2*u[1]u[2]*p[1] 0 0 0;
+      p[1]*u[2] 1+p[1]*u[1]-p[2]-p[3] 0 0 0 -2*u[1]*u[2]*p[1]+u[2]*p[2]+u[2]*p[3] 0 0;
+      0 p[2] 1 0 0 0 -p[2]*u[2] 0;
+      0 p[3] 0 1 0 0 0 -p[3]*u[2];
+      0 0 0 0 1 0 0 0;
+      0 0 0 0 0 1 0 0;
+      0 0 0 0 0 0 1 0;
+      0 0 0 0 0 0 0 1]
+  
+    B = [-u[1]*u[2] 0 0;
+    u[1]*u[2] -u[2] -u[2];
+    0 u[2] 0;
+    0 0 u[2];
+    0 0 0;
+    0 0 0;
+    0 0 0;
+    0 0 0]
+  
+    Q = zeros(8,8)
+    Q[1,1] = 0.1  #Corresponding to susceptible proportion; More people being infected can lead to herd immunity stage;
+    Q[2,2] = 1    #Corresponding to infected proportion; We want the infected population to be minizied at any given state;
+    Q[3,3] = 0
+    Q[4,4] = 1    #Corresponding to deceased propotion; We want the deceased population to be minimized at any given state;
+  
+    # Minimizing susceptible proportion is less important than
+    # minimizing infected and deceased propotion so we the weight 
+    # corresponding to the susceptible proportion is smaller than 
+    # the other two (0.1, compared to the 1s)
+    # Note if we set Q[1,1] =1, the LQR give weird outputs (p_i goes 
+    # to negative); I don't know the reason why the controller behaves like that;
+  
+    R = Matrix{Float64}(I,3,3)
+    Q[2,2] = 0.1 
+    # Setting penalties for each control inputs
+    # We consider changing transmission rate (p_i) and death rate (p_d) to be
+    # the most resource-comsuming, compared to changing removal/healing rate (p_r),
+    # since we can leverage testing/quarantine to increase removal/healing rate indirectly.
+    # Hence, we have 0.1 for Q[2,2], which is related to p_r, and 1s for the rest.
+    Qf = Q
+  
+    PN = Q + A'*Qf*A - A'*Qf*B*inv(R+B'*Qf*B)*B'*Qf*A
+    return K = inv(R + B'*PN*B)*B'*PN*A
+  
   end
 
 function runControlAuto(rxn,u0,p,tspan)
@@ -160,6 +207,37 @@ function runControlAuto(rxn,u0,p,tspan)
     return sol_discr, t
 
 end
+
+#= Baika's later version
+function runControlAuto(rxn,u0,p,tspan)
+    u_prev = u0  #Initial conditions are set as proportions which is easier to analyze
+    p_prev = p #The initial conditons of control inputs are only used for computing the second step
+    t = tspan[1]:tspan[2]
+    prev_t = t[1]
+    sol_discr = zeros(length(u_prev),length(t)) # Epidemic states
+    sol_discr[:,1] = u_prev                     # Control inputs (model parameters)
+    
+    sol_control= zeros(length(p_prev),length(t))
+    sol_control[:,1] = p_prev
+    for ii in 2:length(t)
+      curr_t = t[ii]
+      # global u_prev
+      # global p_prev
+      # global prev_t
+      K_curr = makeK(u_prev,p_prev)
+      u_aug = [u_prev; [1,1,1,1]]
+      p_curr = -K_curr*u_aug
+      prob = ODEProblem(rxn, u_prev, (prev_t,curr_t), p_curr)
+      sol_curr = solve(prob, Tsit5())
+      u_curr = sol_curr(curr_t)
+      sol_discr[:,ii] = u_curr
+      sol_control[:,ii] = p_prev
+      u_prev = u_curr
+      p_prev = p_curr
+      prev_t = curr_t
+    end
+    return sol_discr, t
+end=#
 
 #**********************
 # Draw wiring diagram *
@@ -268,6 +346,7 @@ function makeMultiAge(n;f_aug=true)
         end
     end
     MultiAge = LabelledPetriNet(lstates,ltrans...)
+    return MultiAge
 end
 
 # Typed Multi-Age model
@@ -381,6 +460,7 @@ function formAugSIR()
     :id => (:S=>:S), :id=>(:I=>:I),:id=>(:R=>:R))
     return SIR
 end    
+
 function formAugSIRD()
     SIRD = LabelledPetriNet([:S, :I, :R, :D],
     :inf => ((:S,:I) => (:I,:I)),
@@ -437,13 +517,8 @@ function altTypeQuarantine(Quarantine)
     return Quarantine_typed
 end
 
-
-
-
-
-
 function formTarget(tm1,tm2)
-    return first(legs(pullback(tm1, tm2))) ⋅ tm1
+    return CategoricalAlgebra.compose(first(legs(pullback(tm1, tm2))), tm1)
 end
 
 function formModelList(tm1,tm2,tm3,tm4)
