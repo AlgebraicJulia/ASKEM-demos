@@ -11,6 +11,7 @@ include("Mira.jl")
 include("Oct2022Demo.jl")
 include("Upstream.jl")
 include("EpidemiologicalPetriNets.jl")
+include("SubACSets.jl")
 include("semagrams/Semagrams.jl")
 
 @reexport using .PetriMTK
@@ -22,5 +23,6 @@ include("semagrams/Semagrams.jl")
 @reexport using .Oct2022Demo
 @reexport using .Upstream
 @reexport using .EpidemiologicalPetriNets
+@reexport using .SubACSets
 
 end
