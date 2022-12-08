@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.12
+# v0.19.13
 
 using Markdown
 using InteractiveUtils
@@ -92,7 +92,7 @@ end
 
 # ╔═╡ 6762c0ea-a453-451c-80c1-566a1389a45c
 begin
-	s1_sird_cntrl_policy = deserialize_wiringdiagram(joinpath(idirpath_wd,"../s1_sird_cntrl_policy.json"))
+	s1_sird_cntrl_policy = deserialize_wiringdiagram(joinpath(idirpath_wd,"s1_sird_cntrl_policy.json"))
 	draw(s1_sird_cntrl_policy)
 end
 
