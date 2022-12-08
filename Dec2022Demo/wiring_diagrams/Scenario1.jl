@@ -81,14 +81,18 @@ import Catlab.Graphics.Graphviz: run_graphviz
 draw_diagram(d,s::String) = open(s, "w") do fp
     run_graphviz(fp, to_graphviz(d))
 end
-try mkdir("s1_diagrams") catch end
-draw_diagram(s1_sird_cntrl_policy, joinpath("s1_diagrams","sird_cntrl_policy.dot"))
-draw_diagram(s1_sird_cntrl_optim, joinpath("s1_diagrams", "sird_cntrl_optim.dot"))
-draw_diagram(s1_sird_cntrl_auto, joinpath("s1_diagrams/", "sird_cntrl_auto.dot"))
 
-write_json_acset(s1_sird_cntrl_policy.diagram, "s1_sird_cntrl_policy.json")
-write_json_acset(s1_sird_cntrl_optim.diagram, "s1_sird_cntrl_optim.json")
-write_json_acset(s1_sird_cntrl_auto.diagram, "s1_sird_cntrl_auto.json")
+odirpath_dot = joinpath(@__DIR__,"../outputs/s1_diagrams")
+try mkdir(odirpath_dot) catch end
+draw_diagram(s1_sird_cntrl_policy, joinpath(odirpath_dot, "sird_cntrl_policy.dot"))
+draw_diagram(s1_sird_cntrl_optim, joinpath(odirpath_dot, "sird_cntrl_optim.dot"))
+draw_diagram(s1_sird_cntrl_auto, joinpath(odirpath_dot, "sird_cntrl_auto.dot"))
+
+odirpath_wd = joinpath(@__DIR__,"../outputs")
+try mkdir(odirpath_wd) catch end
+write_json_acset(s1_sird_cntrl_policy.diagram, joinpath(odirpath_wd, "s1_sird_cntrl_policy.json"))
+write_json_acset(s1_sird_cntrl_optim.diagram, joinpath(odirpath_wd, "s1_sird_cntrl_optim.json"))
+write_json_acset(s1_sird_cntrl_auto.diagram, joinpath(odirpath_wd,"s1_sird_cntrl_auto.json"))
 
 #****************************************
 # Test functionality of wiring diagrams *
@@ -121,6 +125,6 @@ auto_tv_sol, t_auto = auto_jfunc(u0,p_fixed,tspan)
 
 # Form LabelledPetriNet and write to file
 cwf_lpn = presentationToLabelledPetriNet(ControlWorkflow)
-write_json_acset(cwf_lpn,"s1_cntrl_wf_present.json")
+write_json_acset(cwf_lpn,joinpath(odirpath_wd,"s1_cntrl_wf_present.json"))
 
 # lpn_rt = read_json_acset(LabelledPetriNet,"s1_cntrl_wf_present.json")

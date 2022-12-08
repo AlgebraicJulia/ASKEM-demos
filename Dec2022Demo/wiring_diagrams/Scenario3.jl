@@ -56,19 +56,25 @@ find_sird_q_components = @program ComparisonWorkflow () begin
     return res
 end
 
+
+odirpath = joinpath(@__DIR__,"../outputs")
+try mkdir(odirpath) catch end
+
+write_json_acset(find_sird_q_components.diagram,joinpath(odirpath,"s3_find_sird_q.json"))
+cwf_lpn = presentationToLabelledPetriNet(ComparisonWorkflow)
+write_json_acset(cwf_lpn,joinpath(odirpath,"s3_compar_wf_present.json"))
+
+find_rt = deserialize_wiringdiagram(joinpath(odirpath,"s3_find_sird_q.json"))
+find_comps_hom_expr = to_hom_expr(FreeBiproductCategory, find_rt)
+find_comps_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(find_comps_hom_expr)
+res = eval(find_comps_jfunc)()
 #=
 @test res == [(SIRD_typed => Quarantine_typed),
               (Quarantine_typed => SIRD2_typed)]
 Footer
 =#
 
-write_json_acset(find_sird_q_components.diagram, "s3_find_sird_q.json")
-cwf_lpn = presentationToLabelledPetriNet(ComparisonWorkflow)
-write_json_acset(cwf_lpn,"s3_compar_wf_present.json")
-
-find_rt = deserialize_wiringdiagram("../s3_find_sird_q.json")
-find_comps_hom_expr = to_hom_expr(FreeBiproductCategory, find_rt)
-find_comps_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(find_comps_hom_expr)
-res = eval(find_comps_jfunc)()
-
 AlgebraicPetri.Graph(res[1][1])
+AlgebraicPetri.Graph(res[1][2])
+AlgebraicPetri.Graph(res[2][1])
+AlgebraicPetri.Graph(res[2][2])

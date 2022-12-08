@@ -41,7 +41,8 @@ md"""### SIRD Model"""
 
 # ╔═╡ 85ddcf05-c9c5-4436-8511-3713dbbe7694
 begin
-	SIRD = read_json_acset(LabelledPetriNet,"../SIRD.json")
+	idirpath = joinpath(@__DIR__,"../outputs")
+	SIRD = read_json_acset(LabelledPetriNet,joinpath(idirpath,"SIRD.json"))
 	AlgebraicPetri.Graph(SIRD)
 end
 
@@ -53,13 +54,13 @@ md"""### Vaccination Model"""
 
 # ╔═╡ b323ac71-837a-4da1-ac81-05ac1ca9d600
 begin
-	StratificationWorkflow_lpn = read_json_acset(LabelledPetriNet,"../s2_strat_wf_present.json")
+	StratificationWorkflow_lpn = read_json_acset(LabelledPetriNet,joinpath(idirpath,"s2_strat_wf_present.json"))
 	AlgebraicPetri.Graph(StratificationWorkflow_lpn)
 end
 
 # ╔═╡ 6762c0ea-a453-451c-80c1-566a1389a45c
 begin
-	stratify_sird_age_vax = deserialize_wiringdiagram("../s2_strat_sird_age_vax.json")
+	stratify_sird_age_vax = deserialize_wiringdiagram(joinpath(idirpath,"s2_strat_sird_age_vax.json"))
 	draw(stratify_sird_age_vax)
 end
 
@@ -70,10 +71,22 @@ begin
 end;
 
 # ╔═╡ 80bb3bb1-03e9-450c-ba96-18ea19a29a6d
-eval(stratify_sird_jfunc)(7,"sird_age7_vax.json")
+eval(stratify_sird_jfunc)(7,joinpath(idirpath,"sird_age7_vax.json"));
 
 # ╔═╡ b602a85d-6792-4d93-b050-e901de024f5d
-AlgebraicPetri.Graph(dom(SIRD_AGE_Vax))
+begin
+	SIRD_Age_Vax_rt = read_json_acset(LabelledPetriNet,joinpath(idirpath,"sird_age7_vax.json"))
+end;
+
+# ╔═╡ e925f14d-d85a-4316-9703-3bdc956b50d7
+#=begin
+	Pkg.add("Images")
+	using Images
+	using Plots
+	img_path = joinpath(idirpath,"sird_age7_vax.svg")
+	img_data = load(img_path)
+	plot(img_data)
+end=#
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
 md"""### SVIIvR Disease Model"""
@@ -94,5 +107,6 @@ md"""### SVIIvR Disease Model"""
 # ╠═bb368013-7b99-4b2d-84e1-d22466983a74
 # ╠═80bb3bb1-03e9-450c-ba96-18ea19a29a6d
 # ╠═b602a85d-6792-4d93-b050-e901de024f5d
+# ╠═e925f14d-d85a-4316-9703-3bdc956b50d7
 # ╠═505cd6b7-f26c-42e0-812b-6962255d3648
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008

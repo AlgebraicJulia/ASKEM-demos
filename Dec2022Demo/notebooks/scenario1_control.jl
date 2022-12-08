@@ -52,7 +52,8 @@ md"""### SIRD Model (with H Observed)"""
 
 # ╔═╡ 85ddcf05-c9c5-4436-8511-3713dbbe7694
 begin
-	SIRD = read_json_acset(LabelledPetriNet,"../SIRD.json")
+	idirpath_data = joinpath(@__DIR__,"../outputs")
+	SIRD = read_json_acset(LabelledPetriNet,joinpath(idirpath_data,"SIRD.json"))
 	AlgebraicPetri.Graph(SIRD)
 end
 
@@ -84,13 +85,14 @@ md"""- Run with no intervention
 
 # ╔═╡ b323ac71-837a-4da1-ac81-05ac1ca9d600
 begin
-	ControlWorkflow = read_json_acset(LabelledPetriNet,"../s1_cntrl_wf_present.json")
+	idirpath_wd = joinpath(@__DIR__,"../outputs")
+	ControlWorkflow = read_json_acset(LabelledPetriNet,joinpath(idirpath_wd,"s1_cntrl_wf_present.json"))
 	AlgebraicPetri.Graph(ControlWorkflow)
 end
 
 # ╔═╡ 6762c0ea-a453-451c-80c1-566a1389a45c
 begin
-	s1_sird_cntrl_policy = deserialize_wiringdiagram("../s1_sird_cntrl_policy.json")
+	s1_sird_cntrl_policy = deserialize_wiringdiagram(joinpath(idirpath_wd,"../s1_sird_cntrl_policy.json"))
 	draw(s1_sird_cntrl_policy)
 end
 
@@ -107,7 +109,10 @@ end;
 free_tv_sol = eval(free_jfunc)(u0,p_fixed,tspan,invsig(10^-8),tstart_policy);
 
 # ╔═╡ 7dde087a-414f-4d43-89e6-23439f58e093
-plot(free_tv_sol)
+begin
+	plot(free_tv_sol)
+	plot!(hosp_rt*free_tv_sol(1:1000)[2,:])
+end
 
 # ╔═╡ 8fddc83d-8993-4b82-b2e2-d833c8bd9f26
 md"""#### Fixed policy - 5% decrease in infection rate on first day"""
@@ -122,14 +127,17 @@ end;
 policy_tv_sol = eval(policy_jfunc)(u0,p_fixed,tspan,alpha_policy,tstart_policy);
 
 # ╔═╡ 1504332f-7ede-42c3-90ba-23f39bef639b
-plot(policy_tv_sol)
+begin
+	plot(policy_tv_sol)
+	plot!(hosp_rt*policy_tv_sol(1:1000)[2,:])
+end
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
 md"""### Control via optimization - keep hospitalizations under 125 w/ decrease starting day 200"""
 
 # ╔═╡ f5a2b608-d8ea-4cfa-bc53-80ee170443eb
 begin
-	s1_sird_cntrl_optim = deserialize_wiringdiagram("../s1_sird_cntrl_optim.json")
+	s1_sird_cntrl_optim = deserialize_wiringdiagram(joinpath(idirpath_wd,"s1_sird_cntrl_optim.json"))
 	draw(s1_sird_cntrl_optim)
 end
 
@@ -143,7 +151,10 @@ end;
 alpha, optim_tv_sol, t, obs_hosp = 	eval(optim_jfunc)(u0,p_fixed,tspan,hosp_rt,thresh_H,t_start,alpha_init);
 
 # ╔═╡ 0b92d72e-64f7-4499-8286-1ffb9fd26abf
-plot(optim_tv_sol)
+begin
+	plot(optim_tv_sol)
+	plot!(hosp_rt*optim_tv_sol(1:1000)[2,:])
+end
 
 # ╔═╡ b24e11ce-b767-4974-ab67-ce0bb442ab4c
 sig(alpha)
@@ -153,7 +164,7 @@ md"""### Automated LQR control"""
 
 # ╔═╡ bb48c3e5-5ba0-47f0-8df7-a4a90863dad9
 begin
-	s1_sird_cntrl_auto = deserialize_wiringdiagram("../s1_sird_cntrl_auto.json")
+	s1_sird_cntrl_auto = deserialize_wiringdiagram(joinpath(idirpath_wd,"s1_sird_cntrl_auto.json"))
 	draw(s1_sird_cntrl_auto)
 end
 
@@ -173,13 +184,19 @@ end;
 free_tv_sol_new = eval(free_jfunc)(u0_new,p_new,tspan,invsig(10^-8),tstart_policy);
 
 # ╔═╡ ecd35150-8e1e-4215-a38e-f7353b9f925d
-plot(free_tv_sol_new)
+begin
+	plot(free_tv_sol_new)
+	plot!(hosp_rt*free_tv_sol_new(1:1000)[2,:])
+end
 
 # ╔═╡ 7f5c4e33-1c8b-41a1-ba73-52d3643fa008
 auto_tv_sol, t_auto = eval(auto_jfunc)(u0_new,p_new,tspan);
 
 # ╔═╡ b0b6c39f-763d-4cf2-8703-116d35de8c12
-plot(t_auto,auto_tv_sol')
+begin
+	plot(t_auto,auto_tv_sol')
+	plot!(hosp_rt*auto_tv_sol[2,:])
+end
 
 # ╔═╡ Cell order:
 # ╠═9aec393e-a083-45f5-ad73-e6bef22bb056
