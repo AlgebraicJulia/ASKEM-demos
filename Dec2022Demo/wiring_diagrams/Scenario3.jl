@@ -13,7 +13,7 @@ using AlgebraicPetri: Graph
 
 using ASKEM
 using Test
-using ASKEM.Ontologies: infectious_ontology
+using ASKEM.Ontologies: infectious_ontology, strip_names
 using ASKEM.Dec2022Demo: formAugSIR, formAugSIRD, formAugSIRD2, formAugQuarantine, altTypeSIR, altTypeSIRD, altTypeSIRD2, altTypeQuarantine, formTarget, formModelList
 using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
 
@@ -65,3 +65,10 @@ Footer
 write_json_acset(find_sird_q_components.diagram, "s3_find_sird_q.json")
 cwf_lpn = presentationToLabelledPetriNet(ComparisonWorkflow)
 write_json_acset(cwf_lpn,"s3_compar_wf_present.json")
+
+find_rt = deserialize_wiringdiagram("../s3_find_sird_q.json")
+find_comps_hom_expr = to_hom_expr(FreeBiproductCategory, find_rt)
+find_comps_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(find_comps_hom_expr)
+res = eval(find_comps_jfunc)()
+
+AlgebraicPetri.Graph(res[1][1])

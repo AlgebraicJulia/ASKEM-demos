@@ -163,8 +163,20 @@ begin
 	auto_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile_expr(auto_hom_expr)
 end;
 
+# ╔═╡ 725afdba-e585-4904-95b5-e51fee5769e1
+begin
+	u0_new = [1-0.1,0.1,0,0]  
+	p_new = [0.7, 0.01, 0.001] 
+end;
+
+# ╔═╡ d4a31c3a-e0ee-49b5-9df2-11836a00cc65
+free_tv_sol_new = eval(free_jfunc)(u0_new,p_new,tspan,invsig(10^-8),tstart_policy);
+
+# ╔═╡ ecd35150-8e1e-4215-a38e-f7353b9f925d
+plot(free_tv_sol_new)
+
 # ╔═╡ 7f5c4e33-1c8b-41a1-ba73-52d3643fa008
-auto_tv_sol, t_auto = eval(auto_jfunc)(u0,p_fixed,tspan);
+auto_tv_sol, t_auto = eval(auto_jfunc)(u0_new,p_new,tspan);
 
 # ╔═╡ b0b6c39f-763d-4cf2-8703-116d35de8c12
 plot(t_auto,auto_tv_sol')
@@ -199,5 +211,8 @@ plot(t_auto,auto_tv_sol')
 # ╠═7366703c-7976-4cc0-ab6e-da39054270d9
 # ╠═bb48c3e5-5ba0-47f0-8df7-a4a90863dad9
 # ╠═dc8b5de5-721b-4f7f-ad2d-c9e0a077d18e
+# ╠═725afdba-e585-4904-95b5-e51fee5769e1
+# ╠═d4a31c3a-e0ee-49b5-9df2-11836a00cc65
+# ╠═ecd35150-8e1e-4215-a38e-f7353b9f925d
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008
 # ╠═b0b6c39f-763d-4cf2-8703-116d35de8c12
