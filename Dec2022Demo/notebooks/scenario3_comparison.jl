@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.12
+# v0.19.13
 
 using Markdown
 using InteractiveUtils
@@ -109,8 +109,14 @@ AlgebraicPetri.Graph(dom(res[1][2]))
 # ╔═╡ 32be2bde-7b6a-49fb-b27a-779409ef3efd
 md"""The second pair is Quarantine and the alternative SIRD."""
 
+# ╔═╡ bee76011-267a-461b-91e4-2452cf940cee
+dom(res[1][2]) == dom(res[2][1])
+
 # ╔═╡ 6133a0c1-6b83-489f-b884-2fd558f66969
 AlgebraicPetri.Graph(dom(res[2][2]))
+
+# ╔═╡ d7efab3f-358a-4832-aee3-6f81ad9b5bff
+is_isomorphic(strip_names(dom(res[1][1])), strip_names(dom(res[2][2])))
 
 # ╔═╡ 505cd6b7-f26c-42e0-812b-6962255d3648
 md"""### Maximal Common ACSet"""
@@ -191,7 +197,9 @@ AlgebraicPetri.Graph(maxcommon[1])
 # ╠═b602a85d-6792-4d93-b050-e901de024f5d
 # ╠═d5db830a-4932-4c77-837e-26c4c917ee89
 # ╟─32be2bde-7b6a-49fb-b27a-779409ef3efd
+# ╠═bee76011-267a-461b-91e4-2452cf940cee
 # ╠═6133a0c1-6b83-489f-b884-2fd558f66969
+# ╠═d7efab3f-358a-4832-aee3-6f81ad9b5bff
 # ╟─505cd6b7-f26c-42e0-812b-6962255d3648
 # ╠═7f5c4e33-1c8b-41a1-ba73-52d3643fa008
 # ╟─3a6ef240-1a22-497e-83b0-c7c0b01f58f5
