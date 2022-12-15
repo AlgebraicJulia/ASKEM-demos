@@ -21,6 +21,10 @@ using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
 # SIRD_MA_Vax = typed_stratify(SIRD_MA, Vax_aug_typed)
 # AlgebraicPetri.Graph(dom(SIRD_MA_Vax))
 
+#********************************************
+# Presentation for stratification workflows *
+#********************************************
+
 # Form Workflow presentation of FreeBiproductCategory
 @present StratificationWorkflow(FreeBiproductCategory) begin
     (LPN,MdlAug,MdlType,MdlTyped,NumStrat,AugStates,File)::Ob
@@ -41,12 +45,16 @@ using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram
 
     writeMdlStrat::Hom(MdlTyped⊗File,munit())
 
-    loadSVIIvR::Hom(File,LPN)
+    loadSVIIvR::Hom(File,MdlAug) # LPN)
     sviivrAugStates::Hom(munit(),AugStates)
     typeSVIIvR::Hom(MdlAug⊗MdlType,MdlTyped) 
     
     # loadBucky::Hom(File,LPN)
  end
+
+#*****************************************************
+# Wiring diagram for stratifying SIRD by age and vax *
+#*****************************************************
 
 # Form wiring diagram of load_stratify_calibrate_control Workflow
 stratify_sird_age_vax = @program StratificationWorkflow (num_ages::NumStrat, out_file::File) begin #
@@ -87,9 +95,9 @@ odirpath = joinpath(@__DIR__,"../outputs")
 write_json_acset(stratify_sird_age_vax.diagram, joinpath(odirpath,"s2_strat_sird_age_vax.json"))
 
 
-#****************************************
-# Test functionality of wiring diagrams *
-#****************************************
+#***************************************
+# Test functionality of wiring diagram *
+#***************************************
 stratify_sird_hom_expr = to_hom_expr(FreeBiproductCategory, stratify_sird_age_vax)
 stratify_sird_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(stratify_sird_hom_expr)
 test = stratify_sird_jfunc(7,joinpath(odirpath,"sird_age7_vax.json"))
@@ -131,8 +139,9 @@ write_json_acset(swf_lpn,joinpath(odirpath,"s2_strat_wf_present.json"))
 # lpn_rt = read_json_acset(LabelledPetriNet,"s1_cntrl_wf_present.json")
 
 
-#=
-#**************
+#***********************************************
+# Wiring diagram for stratifying SVIIvR by age *
+#***********************************************
 stratify_sviivr_age = @program StratificationWorkflow (in_file::File, num_ages::NumStrat, out_file::File) begin #
     # Form models
     mdl_sviivr = loadSVIIvR(in_file)
@@ -140,11 +149,11 @@ stratify_sviivr_age = @program StratificationWorkflow (in_file::File, num_ages::
     mdl_age_aug = makeMultiAge(num_ages)
 
     # Augment models
-    sviivr_aug_states = sviivrAugStates()
-    mdl_sviivr_aug = augLabelledPetriNet(mdl_sviivr,sviivr_aug_states)
+    # sviivr_aug_states = sviivrAugStates()
+    # mdl_sviivr_aug = augLabelledPetriNet(mdl_sviivr,sviivr_aug_states)
     
     # Specify types of models
-    mdl_sviivr_typed = typeSVIIvR(mdl_sviivr_aug,mdl_type)
+    mdl_sviivr_typed = typeSVIIvR(mdl_sviivr,mdl_type)
     mdl_age_typed = typeAge(mdl_age_aug,mdl_type)
     
     # Stratify models
@@ -154,10 +163,12 @@ stratify_sviivr_age = @program StratificationWorkflow (in_file::File, num_ages::
     writeMdlStrat(mdl_sviivr_age, out_file)
 end
 
+# Write diagram to file as JSON
 write_json_acset(stratify_sviivr_age.diagram, joinpath(odirpath,"s2_strat_sviivr_age.json"))
 
+# Read-in, compile, and run wiring diagram
 rt_wd = deserialize_wiringdiagram(joinpath(odirpath,"s2_strat_sviivr_age.json"))
 stratify_sviivr_hom_expr = to_hom_expr(FreeBiproductCategory, rt_wd)
 stratify_sviivr_jfunc = Catlab.Programs.GenerateJuliaPrograms.compile(stratify_sviivr_hom_expr)
-stratify_sviivr_jfunc("../data/CHIME_SVIIvR_dynamics_BiLayer.json",7,joinpath(odirpath,"sviivr_age7.json"))
-=#
+idirpath = joinpath(@__DIR__,"../../data")
+stratify_sviivr_jfunc(joinpath(idirpath,"CHIME_SVIIvR_dynamics_BiLayer.json"),7,joinpath(odirpath,"sviivr_age7.json"))

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.13
+# v0.19.12
 
 using Markdown
 using InteractiveUtils
@@ -52,7 +52,7 @@ md"""Here we search a list of models for a pair whose product equals a target mo
 md"""In this example, the target model is the product of SIRD and Quarantine components"""
 
 # ╔═╡ 39f07f7d-2ca0-462e-89d9-d7d11aece267
-md"""The search list the component SIRD and Quarantine models in addition to SIR and  an alternative SIRD."""
+md"""The search list contains the component SIRD and Quarantine models in addition to SIR and an alternative SIRD."""
 
 # ╔═╡ a33613cc-e896-4e7c-8d88-766a460d68c4
 md"""#### ComparisonWorkflow Presentaion"""
@@ -109,8 +109,14 @@ AlgebraicPetri.Graph(dom(res[1][2]))
 # ╔═╡ 32be2bde-7b6a-49fb-b27a-779409ef3efd
 md"""The second pair is Quarantine and the alternative SIRD."""
 
+# ╔═╡ 222a46b6-e7af-471d-8dc1-33e627660136
+md"""Check that the first model of the second pair is Quarantine, like the second model of the first pair:"""
+
 # ╔═╡ bee76011-267a-461b-91e4-2452cf940cee
 dom(res[1][2]) == dom(res[2][1])
+
+# ╔═╡ bbff703b-046d-4680-87e8-cf72deb09248
+md"""Check that the second model of the second pair is an isomorphic SIRD:"""
 
 # ╔═╡ 6133a0c1-6b83-489f-b884-2fd558f66969
 AlgebraicPetri.Graph(dom(res[2][2]))
@@ -197,7 +203,9 @@ AlgebraicPetri.Graph(maxcommon[1])
 # ╠═b602a85d-6792-4d93-b050-e901de024f5d
 # ╠═d5db830a-4932-4c77-837e-26c4c917ee89
 # ╟─32be2bde-7b6a-49fb-b27a-779409ef3efd
+# ╟─222a46b6-e7af-471d-8dc1-33e627660136
 # ╠═bee76011-267a-461b-91e4-2452cf940cee
+# ╟─bbff703b-046d-4680-87e8-cf72deb09248
 # ╠═6133a0c1-6b83-489f-b884-2fd558f66969
 # ╠═d7efab3f-358a-4832-aee3-6f81ad9b5bff
 # ╟─505cd6b7-f26c-42e0-812b-6962255d3648

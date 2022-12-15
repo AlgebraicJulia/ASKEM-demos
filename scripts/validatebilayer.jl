@@ -8,8 +8,11 @@ using AlgebraicPetri.BilayerNetworks
 inputfile = ARGS[1]
 outputfile = ARGS[2]
 
-bln = read_json_acset(BilayerNetwork, inputfile)
+bln = read_json_acset(LabelledBilayerNetwork, inputfile)
 show(bln)
-lrn = LabelledReactionNet()
-migrate!(lrn, bln)
-write_json_acset(lrn, outputfile)
+# lrn = LabelledReactionNet()
+# migrate!(lrn, bln)
+# write_json_acset(lrn, outputfile) 
+lpn = LabelledPetriNet()
+migrate!(lpn, bln)
+write_json_acset(lpn, outputfile)
