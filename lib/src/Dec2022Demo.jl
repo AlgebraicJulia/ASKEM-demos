@@ -208,7 +208,7 @@ function runControlAuto(rxn,u0,p,tspan)
 
 end
 
-#= Baika's later version
+#= Later version
 function runControlAuto(rxn,u0,p,tspan)
     u_prev = u0  #Initial conditions are set as proportions which is easier to analyze
     p_prev = p #The initial conditons of control inputs are only used for computing the second step
@@ -414,7 +414,8 @@ end
 
 # Write stratified model to file as JSON
 function writeMdlStrat(mdl, file)
-  write_json_acset(dom(mdl), file)
+    # map(dom(mdl), Name=x->collect ∘ flatten(x))
+    write_json_acset(dom(mdl), file)
 end
 
 function loadSVIIvR(filepath)
@@ -426,19 +427,101 @@ function loadSVIIvR(filepath)
 end
 
 function sviivrAugStates()
-    return [:S, :V, :I, :Iv, :R]
+    return [:S, :V, :I, :I_v, :R]
 end
 
-function typeSVIIvR(SVIIvR_aug, types)
+function typeSVIIvR_old(SVIIvR_aug, types)
+    # Attempt to use homomorphism instead of specifying whole transformation
+    #=
+    type_comps = Dict()
+    type_comps[:S] = [s, s, s, s, s]
+    type_comps[:T] = [t_interact, t_interact, t_disease, t_interact, t_interact, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata, t_strata]
+    
+    SVIIvR_aug_typed = homomorphisms(SVIIvR_aug, types; initial=type_comps, 
+    type_components=(Name=x->nothing,Rate=x->nothing, Concentration=x->nothing),)
+    println(length(SVIIvR_aug_typed))=#
     SVIIvR_aug_typed = ACSetTransformation(SVIIvR_aug, types,
     S = [s, s, s, s, s],
-    T = [t_interact, t_interact, t_strata, t_interact, t_interact, t_strata, t_strata, t_disease, t_disease, t_disease, t_disease, t_disease],
-    I = [i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_interact1, i_interact2, i_interact1, i_interact2, i_strata, i_strata, i_strata, i_disease, i_disease, i_disease, i_disease, i_disease],
-    O = [o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_interact1, o_interact2, o_interact1, o_interact2, o_strata, o_strata, o_strata, o_disease, o_disease, o_disease, o_disease, o_disease],
+    T = [t_interact, t_interact, t_disease, t_interact, t_interact, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata, t_strata],
+    I = [i_interact1, i_interact2, i_interact1, i_interact2, i_disease, i_interact1, i_interact2, i_interact1, i_interact2, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata, i_strata],
+    O = [o_interact1, o_interact2, o_interact1, o_interact2, o_disease, o_interact1, o_interact2, o_interact1, o_interact2, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata, o_strata],
     Name = name -> nothing 
     )
     @assert is_natural(SVIIvR_aug_typed)
     return SVIIvR_aug_typed
+end
+
+function formInfTypeIandO(lpn,T)
+    I = Vector{Int64}()
+    tilist = zeros(nt(lpn))
+    for ii in 1:length(lpn[:it])
+        curr_t = lpn[:it][ii]
+        if T[curr_t] == t_strata
+            push!(I,i_strata)
+        elseif T[curr_t] == t_disease
+            push!(I,i_disease)
+        else
+            if tilist[curr_t] == 0
+                tilist[curr_t] += 1
+                push!(I,i_interact1)
+            else
+                tilist[curr_t] += 1
+                push!(I,i_interact2)
+            end
+        end
+    end
+    O = Vector{Int64}()
+    tolist = zeros(nt(lpn))
+    for ii in 1:length(lpn[:ot])
+        curr_t = lpn[:ot][ii]
+        if T[curr_t] == t_strata
+            push!(O,o_strata)
+        elseif T[curr_t] == t_disease
+            push!(O,o_disease)
+        else
+            if tolist[curr_t] == 0
+                tolist[curr_t] += 1
+                push!(O,o_interact1)
+            else
+                tolist[curr_t] += 1
+                push!(O,o_interact2)
+            end
+        end
+    end
+    return I, O
+end
+
+function typeSVIIvR(SVIIvR, types, f_aug=false)
+    if f_aug
+        T = [t_interact, t_interact, t_disease, t_interact, t_interact, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata, t_strata]
+    else
+        T = [t_interact, t_interact, t_disease, t_interact, t_interact, t_disease, t_disease]
+    end
+    I, O = formInfTypeIandO(SVIIvR,T)
+    SVIIvR_typed = ACSetTransformation(SVIIvR, types,
+    S = [s, s, s, s, s],
+    T = T,
+    I = I,
+    O = O,
+    Name = name -> nothing 
+    )
+    @assert is_natural(SVIIvR_typed)
+    return SVIIvR_typed
+end
+
+function loadSVIIvR_alt(filepath)
+    lpn_sviivr = read_json_acset(LabelledPetriNet,filepath)
+    return lpn_sviivr
+end
+
+function typeSVIIvR_alt(SVIIvR,infectious_type)
+    typed_SVIIvR = ACSetTransformation(SVIIvR, infectious_type,
+    S = [s, s, s, s, s],
+    T = vcat([t_interact, t_disease, t_interact, t_disease,  t_interact, t_interact, t_disease], repeat([t_strata], 5)),
+    I = vcat([i_interact1, i_interact2, i_disease, i_interact1, i_interact2, i_disease, i_interact1, i_interact2, i_interact1, i_interact2, i_disease], repeat([i_strata], 5)),
+    O = vcat([o_interact1, o_interact2, o_disease, o_interact1, o_interact2, o_disease, o_interact1, o_interact2, o_interact1, o_interact2, o_disease], repeat([o_strata], 5)),
+    Name = name -> nothing
+    );
 end
 
 #=
