@@ -1,7 +1,14 @@
 #!/usr/bin/env julia
 #
 # ./validatebilayer.jl bilayer.json petri.json will convert a bilayer to a petri for validation purposes.
+#
+# Note that, to run, the --project switch must point to a directory 
+# containing a Project.toml file with Catlab and AlgebraicPetri added.
+# For example, to run from the ASKEM-demos/scripts directory:
+# julia --project="../Dec2022Demo" -- validatebilayer.jl ../data/CHIME_SVIIvR_dynamics_BiLayer.json chime_sviivr_lpn.json
+#
 using Catlab
+using Catlab.CategoricalAlgebra
 using AlgebraicPetri
 using AlgebraicPetri.BilayerNetworks
 
