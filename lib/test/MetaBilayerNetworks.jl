@@ -1,3 +1,4 @@
+using Test
 using ASKEM
 using ASKEM.MetaBilayerNetworks
 using Catlab
@@ -33,3 +34,6 @@ bln = @acset MetaBilayerNetwork begin
 end
 
 to_graphviz(bln)
+
+@test bln[:qimeta][2].unit = "ppm"
+@test bln[:qometa][2].unit = "ppm/s"

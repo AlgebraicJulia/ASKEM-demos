@@ -7,5 +7,6 @@ end
 
 @testset "Stratify" begin
     include("Stratify.jl")
+    include("MetaBilayerNetworks.jl")
 end
 
