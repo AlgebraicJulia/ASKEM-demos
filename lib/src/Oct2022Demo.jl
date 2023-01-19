@@ -206,7 +206,7 @@ function stateidx_stratified(model, name, dim=1)
 end
   
 function sumvarsbyname(model, name, sol, sample_times)
-  idxs = stateidx(model, :I)
+  idxs = stateidx(model, name)
   sample_vals = sum(sol(sample_times)[idxs,:], dims=1)
 end
 
