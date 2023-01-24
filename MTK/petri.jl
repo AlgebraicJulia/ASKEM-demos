@@ -1,3 +1,4 @@
+using Test
 using ModelingToolkit
 using AlgebraicPetri
 using AlgebraicPetri.Epidemiology
@@ -35,11 +36,48 @@ make_depvar(p, t) = :($p($t))
 @assert make_depvar(:a, :t) == :(a(t))
 @assert make_depvar(:y, :x) == :(y(x))
 
+function ModelingToolkit.ODESystem(bn::Union{AbstractLabelledBilayerNetwork,AbstractBilayerNetwork}; name = :PetriNet)
+  t = (@variables t)[1]
+  D = Differential(t)
+  symbolic_vars = map(bnsir[:variable]) do v
+      (@variables $v(t))[1]
+  end
+  symbolic_params = map(bnsir[:parameter]) do p
+      (@parameters $p)[1]
+  end
+
+  ϕs = map(parts(bn, :Box)) do b
+    p = symbolic_params[b]
+    vars = mapreduce(*, incident(bn, b, :call), init = p) do i
+      j = bn[i, :arg]
+      return symbolic_vars[j]
+    end
+  end
+
+  infs = map(parts(bn, :Qout)) do tv
+    flux = mapreduce(+, incident(bn, tv, :infusion), init = 0) do wa
+      j = bn[wa, :influx]
+      return ϕs[j]
+    end
+    flux -= mapreduce(+, incident(bn, tv, :effusion), init = 0) do wa
+      j = bn[wa, :efflux]
+      return ϕs[j]
+    end
+  end
+
+  # We assume bnsir[:tanvar] ⊆ bnsir[:variable] here
+  tanvar_idxs = indexin(bnsir[:tanvar], bnsir[:variable])
+  zparts = zip(tanvar_idxs, infs)
+
+  eqs = Equation[D(symbolic_vars[j::Int]) ~ rhs for (j, rhs) in zparts]
+  ODESystem(eqs, t, symbolic_vars, symbolic_params, name=name)
+end
+
 # Compile bilayer network to a modeling toolkit expression
 function compile(bn::Union{AbstractLabelledBilayerNetwork,AbstractBilayerNetwork})
   varstmt = :(@variables t)
   # get state names
-  @show varnames = bnsir[:variable]
+  varnames = bnsir[:variable]
   # convert variables to time dependent variables and add to variable statements
   append!(varstmt.args, make_depvar.(bnsir[:variable], :t))
 
@@ -100,17 +138,15 @@ end
 
 fex = compile(bnsir)
 
-quote
-  #= /Users/fairbanksj/github/AlgebraicJulia/ASKEM-demos/MTK/petri.jl:39 =#
-  @variables t S(t) I(t) R(t)
-  @parameters inf rec
-  D = Differential(t)
-  ϕ1 = inf * S * I
-  ϕ2 = rec * I
-  eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
-  return ODESystem(eqs, t, name=:PetriNet)
-end
-println(fex)
+#= /Users/fairbanksj/github/AlgebraicJulia/ASKEM-demos/MTK/petri.jl:39 =#
+@variables t S(t) I(t) R(t)
+@parameters inf rec
+D = Differential(t)
+ϕ1 = inf * S * I
+ϕ2 = rec * I
+eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
+example = ODESystem(eqs, t, name=:PetriNet)
+@test ODESystem(bnsir) == example
 
 # ... what is this
 # (params...)
