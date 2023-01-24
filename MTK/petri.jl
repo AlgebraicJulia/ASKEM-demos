@@ -9,33 +9,41 @@ using Catlab.Graphics
 import Catlab.CategoricalAlgebra: migrate!
 using Catlab.WiringDiagrams
 using Catlab.Programs.RelationalPrograms
-display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>".75"));
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len => ".75"));
 
-sir = @relation (s,i,r) begin
-    infection(s,i)
-    recovery(i,r)
+# Define SIR Model
+sir = @relation (s, i, r) begin
+  infection(s, i)
+  recovery(i, r)
 end
 display_uwd(sir)
 
+# Convert to Epidemiology petri net
 psir = apex(oapply_epi(sir))
 psir
 Graph(psir)
 
+# Create empty bilayer network
 bnsir = LabelledBilayerNetwork()
+# migrate petri model to bilayer network
 migrate!(bnsir, psir)
 bnsir
 to_graphviz(bnsir)
 
-make_depvar(p,t) = :($p($t))
+make_depvar(p, t) = :($p($t))
 
 @assert make_depvar(:a, :t) == :(a(t))
 @assert make_depvar(:y, :x) == :(y(x))
 
-function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwork})
+# Compile bilayer network to a modeling toolkit expression
+function compile(bn::Union{AbstractLabelledBilayerNetwork,AbstractBilayerNetwork})
   varstmt = :(@variables t)
+  # get state names
   @show varnames = bnsir[:variable]
+  # convert variables to time dependent variables and add to variable statements
   append!(varstmt.args, make_depvar.(bnsir[:variable], :t))
 
+  # get transition names and add as parameters
   paramstmt = :(@parameters)
   params = bnsir[:parameter]
   append!(paramstmt.args, bnsir[:parameter])
@@ -43,7 +51,7 @@ function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwor
   diffstmt = :(D = Differential(t))
 
   ϕs = map(parts(bn, :Box)) do b
-    vars = map(incident(bn, b,:call)) do i
+    vars = map(incident(bn, b, :call)) do i
       j = bn[i, :arg]
       return bn[j, :variable]
     end
@@ -63,7 +71,7 @@ function compile(bn::Union{AbstractLabelledBilayerNetwork, AbstractBilayerNetwor
     # same for the outfluxes
     vars = map(incident(bn, tv, :effusion)) do wn
       j = bn[wn, :efflux]
-      return :(- $(Symbol("ϕ$j")))
+      return :(-$(Symbol("ϕ$j")))
     end
     append!(p.args, vars)
     return p
@@ -93,25 +101,26 @@ end
 fex = compile(bnsir)
 
 quote
-  #= /Users/fairbanksj/github/AlgebraicJulia/ASKEM-demos/MTK/petri.jl:39 =# 
+  #= /Users/fairbanksj/github/AlgebraicJulia/ASKEM-demos/MTK/petri.jl:39 =#
   @variables t S(t) I(t) R(t)
   @parameters inf rec
   D = Differential(t)
   ϕ1 = inf * S * I
   ϕ2 = rec * I
   eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
-  return ODESystem(eqs, t, name = :PetriNet)
+  return ODESystem(eqs, t, name=:PetriNet)
 end
 println(fex)
 
-(params...)
-
-begin
-  @variables t S(t) I(t) R(t)
-  @parameters inf rec
-  D = Differential(t)
-  ϕ1 = inf * S * I
-  ϕ2 = rec * I
-  eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
-  ((S, I, R), (inf, rec), ODESystem(eqs, t, name = :PetriNet))
-end
+# ... what is this
+# (params...)
+#
+# begin
+#   @variables t S(t) I(t) R(t)
+#   @parameters inf rec
+#   D = Differential(t)
+#   ϕ1 = inf * S * I
+#   ϕ2 = rec * I
+#   eqs = [D(S) ~ +(-ϕ1), D(I) ~ ϕ1 + ϕ1 + -ϕ1 + -ϕ2, D(R) ~ +ϕ2]
+#   ((S, I, R), (inf, rec), ODESystem(eqs, t, name=:PetriNet))
+# end
