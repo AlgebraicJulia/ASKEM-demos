@@ -119,9 +119,9 @@ end
 function run_workflow(wiringdiagram, inputs, output_filename)
     wd = deserialize_wiringdiagram(wiringdiagram)
     args = JSON.parsefile(inputs)
-    sim = interpreter(wd, (; json_to_mdl, mtk_simulate, soln_to_csv))
+    sim = interpreter(wd, (; json_to_mdl, mtk_simulate, soln_to_csv = identity))
     sim.set_inputs!(args...)
     out = sim.get_outputs!()[1]
     sim.stop!()
-    out
+    soln_to_netcdf(out, output_filename)
 end
