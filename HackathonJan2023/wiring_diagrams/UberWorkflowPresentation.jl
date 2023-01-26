@@ -77,7 +77,7 @@ using ASKEM.Dec2022Demo: formSIRD, formInfType, augLabelledPetriNet, sirdAugStat
     type_age::Hom(LPNAug⊗LPNType,LPNTyped)
     
     mca::Hom(ListLPN,ListLPN)
-    # plot_mca::Hom(ListLPN⊗ListLPN)
+    plot_mca::Hom(ListLPN,munit())
 
     MakeReactionSystem::Hom(LPN,RXN)
     vectorfield::Hom(LPN,TVRXN)
@@ -168,6 +168,35 @@ end
 #***********************
 # Scenario 1 Workflows *
 #***********************
+s1_q3b = @program UberWorkflow (fname::File,u0::StateVect,p::RateVect,tspan::TSpan,beta::CntrlArgVect,alpha_init::CntrlParamVect) begin 
+    s4m1_bln = load_bln(fname)
+    s4m1 = convert_bln_to_lpn(s4m1_bln)
+
+    mtype = form_type_inf()
+ 
+    aug_states = form_aug_states_s4m1()
+    s4m1_aug = augment_lpn(s4m1,aug_states)
+    s4m1_typed = type_s4m1(s4m1_aug,mtype)
+    
+    mtests = form_test()
+    tests_aug_states = form_aug_states_test()
+    mtests_aug = augment_lpn(mtests,tests_aug_states)
+    mtests_typed = type_test(mtests_aug,mtype)
+    
+    mcohorts = form_cohorts()
+    cohorts_aug_states = form_aug_states_cohorts()
+    mcohorts_aug = augment_lpn(mcohorts,cohorts_aug_states)
+    mcohorts_typed = type_cohorts(mcohorts_aug,mtype)
+
+    s4m1_strat1 = stratify_typed_lpn(s4m1_typed,mcohorts_typed)
+    s4m1_strat2 = stratify_typed_lpn(s4m1_strat1,mtests_typed)
+
+    tv_rxn = vectorfield(s4m1_strat2)
+    p_t = form_tv_params_s4q3a(p,alpha_init)
+    tv_prob = ODEProblem(tv_rxn, u0, tspan, p_t)
+    alpha, tv_sol_cntrl, t, sol_discr = run_control_optim_s4q3a(s4m1_strat2, tv_prob, p_t, tspan, beta, alpha_init)
+    return alpha, tv_sol_cntrl, t
+end
 
 odirpath_fmt = joinpath(@__DIR__,"outputs/wd_figures")
 fmt = ".svg"
