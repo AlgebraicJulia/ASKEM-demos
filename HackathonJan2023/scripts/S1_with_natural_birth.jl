@@ -20,38 +20,37 @@ using ASKEM.Stratify: stratify_typed
 types′ = LabelledPetriNet([:Pop],
   :infect => ((:Pop, :Pop) => (:Pop, :Pop)),
   :disease => (:Pop => :Pop),
-  :strata => (:Pop => :Pop))
+  :strata => (:Pop => :Pop),
+  :natural => (:Pop => :Pop),
+  )
 types = map(types′, Name=name -> nothing)
 
 # Parts of type system for ease of reference
 s, = parts(types′, :S)
-t_interact, t_disease, t_strata = parts(types′, :T)
-i_interact1, i_interact2, i_disease, i_strata = parts(types′, :I)
-o_interact1, o_interact2, o_disease, o_strata = parts(types′, :O);
+t_interact, t_disease, t_strata,t_natural  = parts(types′, :T)
+i_interact1, i_interact2, i_disease, i_strata, i_natural = parts(types′, :I)
+o_interact1, o_interact2, o_disease, o_strata, o_natural = parts(types′, :O);
 
 # SEIRD
-function formSEIRDnat()
-  SEIRDnat = LabelledPetriNet([:S, :E, :I, :R, :D],
-    :inf => ((:S, :I) => (:E, :I)),
-    :conv => (:E => :I),
-    :rec => (:I => :R),
-    :death => (:I => :D),
-    :nat_d_s => (:S => ()),
-    :nat_d_e => (:E => ()),
-    :nat_d_i => (:I => ()),
-    :nat_d_r => (:R => ()),
-    :nat_birth => (() => :S),
-  )
-  return SEIRDnat
-end
 
-seirdnat = formSEIRDnat()
+seirdnat = LabelledPetriNet([:S, :E, :I, :R, :D],
+  :inf => ((:S, :I) => (:E, :I)),
+  :conv => (:E => :I),
+  :rec => (:I => :R),
+  :death => (:I => :D),
+  :nat_d_s => (:S => ()),
+  :nat_d_e => (:E => ()),
+  :nat_d_i => (:I => ()),
+  :nat_d_r => (:R => ()),
+  :nat_birth => (() => :S),
+)
+
 # seirdnat_aug = augLabelledPetriNet(seirdnat, [:S, :E, :I, :R])
 seirdnat_typed = ACSetTransformation(seirdnat, types,
   S=[s, s, s, s, s],
-  T=[t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata],
+  T=[t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_natural],
   I=[i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease],
-  O=[o_interact1, o_interact2, o_disease, o_disease, o_disease, o_strata],
+  O=[o_interact1, o_interact2, o_disease, o_disease, o_disease, o_natural],
   Name=name -> nothing
 )
 @assert is_natural(seirdnat_typed)
@@ -78,8 +77,8 @@ Vax_aug_typed = ACSetTransformation(vax_lpn, types,
 # Stratified
 seirdnat_vax = stratify_typed(
   seirdnat_typed=>[[:strata],[:strata],[:strata],[:strata],[]],
-  Vax_aug_typed=>[[:disease,:infect],[:disease,:infect]], 
-  types′) 
+  Vax_aug_typed=>[[:disease,:infect,:natural],[:disease,:infect]], 
+  types′)
 
 #=function formSEIRHD()
   SEIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
@@ -145,6 +144,8 @@ migrate!(sviivr, sviivr_lbn)
 max_12 = mca(dom(seirdnat_vax), seirdnat_2x)
 max_13 = mca(dom(seirdnat_vax), sviivr)
 max_23 = mca(seirdnat_2x, sviivr)
+
+# we can visualize overlaps with the `visualize_overlap` function
 
 # Three-way comparison
 
