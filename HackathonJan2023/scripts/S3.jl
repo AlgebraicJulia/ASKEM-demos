@@ -15,6 +15,38 @@ function formSEIRHD()
     return SEIRHD
 end
 
+seirhd = formSEIRHD()
+write_json_acset(seirhd, joinpath("outputs/mdl_jsons/", "s3_seirhd.json"))
+
+function formSEIRD()
+    SEIRD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
+	  :exp => ((:S, :I)=>(:E, :I)),
+	  :conv => (:E=>:I),
+	  :rec => (:I=>:R),
+	  :hosp => (:I=>:H),
+      :death => (:H=>:D),
+	)
+    return SEIRD
+end
+
+seird = formSEIRD()
+write_json_acset(seird, joinpath("outputs/mdl_jsons/", "s3_seird.json"))
+
+function formSIRHD()
+    SIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
+	  :exp => ((:S, :I)=>(:E, :I)),
+	  :conv => (:E=>:I),
+	  :rec => (:I=>:R),
+	  :hosp => (:I=>:H),
+      :death => (:H=>:D),
+	)
+    return SIRHD
+end
+
+sirhd = formSIRHD()
+write_json_acset(sirhd, joinpath("outputs/mdl_jsons/", "s3_sirhd.json"))
+
+
 valueat(x::Number, u, t) = x
 valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
 

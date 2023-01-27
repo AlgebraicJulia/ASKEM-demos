@@ -53,6 +53,8 @@ seirhd_vax = stratify_typed(
 
 AlgebraicPetri.Graph(dom(seirhd_vax))
 
+write_json_acset(dom(seirhd_vax), joinpath("outputs/mdl_jsons/", "s2_seirhd_vax.json"))
+
 
 
   sig(x) = 1/(1+exp(-x))

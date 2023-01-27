@@ -132,6 +132,7 @@ seir_test_iso_typed = ACSetTransformation(seir_test_iso, types,
 
 seir_test_iso_cohort = typed_stratify(seir_test_iso_typed, cohort_typed)
 
+write_json_acset(dom(seir_test_iso_cohort), joinpath("outputs/mdl_jsons/", "s4_seir_test_iso_cohort.json"))
 
 #=
 function form_test_strata()
