@@ -77,7 +77,7 @@ Vax_aug_typed = ACSetTransformation(vax_lpn, types,
 # Stratified
 seirdnat_vax = stratify_typed(
   seirdnat_typed=>[[:strata],[:strata],[:strata],[:strata],[]],
-  Vax_aug_typed=>[[:disease,:infect,:natural],[:disease,:infect]], 
+  Vax_aug_typed=>[[:disease,:natural],[:disease,]], 
   types′)
 
 #=function formSEIRHD()
