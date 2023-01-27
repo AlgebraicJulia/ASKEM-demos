@@ -106,7 +106,6 @@ function formSEIRDnatV()
     :nat_d_e => (:Ev => ()),
     :nat_d_i => (:Iv => ()),
     :nat_d_r => (:Rv => ()),
-    :nat_birth => (() => :Sv),
   )
   return SEIRDnatV
 end
