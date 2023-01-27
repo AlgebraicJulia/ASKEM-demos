@@ -10,6 +10,8 @@ using Plots
 using ASKEM.Dec2022Demo: formSIRD, formInfType, augLabelledPetriNet, sirdAugStates, typeSIRD,
   makeMultiAge, typeAge, typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat,
   loadSVIIvR, sviivrAugStates, typeSVIIvR
+using ASKEM.SubACSets: mca
+using ASKEM.Stratify: stratify_typed
 
 #*****
 # Q2 *
@@ -44,24 +46,38 @@ function formSEIRDnat()
 end
 
 seirdnat = formSEIRDnat()
-seirdnat_aug = augLabelledPetriNet(seirdnat, [:S, :E, :I, :R])
-seirdnat_typed = ACSetTransformation(seirdnat_aug, types,
+# seirdnat_aug = augLabelledPetriNet(seirdnat, [:S, :E, :I, :R])
+seirdnat_typed = ACSetTransformation(seirdnat, types,
   S=[s, s, s, s, s],
-  T=[t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
-  I=[i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
-  O=[o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
+  T=[t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata],
+  I=[i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease],
+  O=[o_interact1, o_interact2, o_disease, o_disease, o_disease, o_strata],
   Name=name -> nothing
 )
 @assert is_natural(seirdnat_typed)
 
 # Vax
-vax_lpn = formVax()
-vax_aug_st = vaxAugStates()
-vax_aug = augLabelledPetriNet(vax_lpn, vax_aug_st)
-vax_typed = typeVax(vax_aug, types)
+vax_lpn = LabelledPetriNet([:U, :V],
+  :infuu => ((:U, :U) => (:U, :U)),
+  :infvu => ((:V, :U) => (:V, :U)),
+  :infuv => ((:U, :V) => (:U, :V)),
+  :infvv => ((:V, :V) => (:V, :V)),
+  :vax => (:U => :V),
+)
+# vax_aug = augLabelledPetriNet(vax_lpn, vax_aug_st)
+
+Vax_aug_typed = ACSetTransformation(vax_lpn, types,
+  S=[s, s],
+  T=[t_interact, t_interact, t_interact, t_interact, t_strata],
+  I=[i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_strata],
+  O=[o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_strata],
+  Name=name -> nothing
+)
+@assert is_natural(Vax_aug_typed)
 
 # Stratified
-seirdnat_vax = typed_stratify(seirdnat_typed, vax_typed)
+# seirdnat_vax = typed_stratify(seirdnat_typed, vax_typed)
+# seirdnat_vax = stratify_typed <- TODO: Use the new stratify_typed from stratification made easy
 
 #=function formSEIRHD()
   SEIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
@@ -115,7 +131,7 @@ seirdnat_2x = oapply(SEIRD_composition_pattern, Dict(
 )) |> apex
 
 # CHIMESVIIvR
-sviivr_lbn = read_json_acset(LabelledBilayerNetwork, "../data/CHIME_SVIIvR_dynamics_BiLayer.json")
+sviivr_lbn = read_json_acset(LabelledBilayerNetwork, "../../data/CHIME_SVIIvR_dynamics_BiLayer.json")
 sviivr = LabelledPetriNet()
 migrate!(sviivr, sviivr_lbn)
 
