@@ -1,4 +1,4 @@
-
+using ModelingToolkit
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs, Catlab.WiringDiagrams, Catlab.Graphics
 using AlgebraicPetri
 using AlgebraicPetri.BilayerNetworks
@@ -10,6 +10,7 @@ using Plots
 using ASKEM.Dec2022Demo: formSIRD, formInfType, augLabelledPetriNet, sirdAugStates, typeSIRD, 
                       makeMultiAge, typeAge, typed_stratify, formVax, vaxAugStates, typeVax, writeMdlStrat,
                       loadSVIIvR, sviivrAugStates, typeSVIIvR
+
 
 #*****
 # Q2 *
@@ -80,14 +81,14 @@ end=#
 # SEIRDnat "stratified with vax"
 function formSEIRDnatV()
   SEIRDnatV = LabelledPetriNet([:Sv, :Ev, :Iv, :Rv, :D],
-  :inf => ((:Sv, :Iv)=>(:Ev, :Iv)),
-  :conv => (:Ev=>:Iv),
-  :rec => (:Iv=>:Rv),
-  :death => (:Iv=>:D),
-  :nat_d_s => (:Sv=>:D),
-  :nat_d_e => (:Ev=>:D),
-  :nat_d_i => (:Iv=>:D),
-  :nat_d_r => (:Rv=>:D),
+  :inf_v => ((:Sv, :Iv)=>(:Ev, :Iv)),
+  :conv_v => (:Ev=>:Iv),
+  :rec_v => (:Iv=>:Rv),
+  :death_v => (:Iv=>:D),
+  :nat_d_v_s => (:Sv=>:D),
+  :nat_d_v_e => (:Ev=>:D),
+  :nat_d_v_i => (:Iv=>:D),
+  :nat_d_v_r => (:Rv=>:D),
 )
   return SEIRDnatV
 end
@@ -111,6 +112,21 @@ seirdnat_2x = oapply(SEIRD_composition_pattern, Dict(
   :vax => Open(seirdnat_v),
   :cross_exposure => cross_exposure
 )) |> apex
+
+
+function Symbolics.substitute(sys::ODESystem, rules::Union{Vector{<:Pair}, Dict})
+  rules = ModelingToolkit.todict(map(r->Symbolics.unwrap(r[1])=>Symbolics.unwrap(r[2]), collect(rules)))
+  eqs = ModelingToolkit.fast_substitute(ModelingToolkit.equations(sys), rules)
+  ODESystem(eqs, ModelingToolkit.get_iv(sys); name = nameof(sys))
+end
+using UnPack
+@unpack inf_v, inf, inf_uv, inf_vu = ode_sys
+@parameters uinf_v uinf uinf_vu uinf_uv N ξ
+subs = Dict(inf_v => (1 - ξ)^2 * uinf_v/N, inf => uinf/N,
+inf_uv => (1 - ξ) * uinf, inf_vu => (1 - ξ) * uinf)
+subed_ode_sys = ModelingToolkit.substitute(ode_sys, subs)
+
+ModelingToolkit.toexpr(subed_ode_sys)
 
 # CHIMESVIIvR
 sviivr_lbn = read_json_acset(LabelledBilayerNetwork,"../data/CHIME_SVIIvR_dynamics_BiLayer.json")

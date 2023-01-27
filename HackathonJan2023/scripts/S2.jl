@@ -1,23 +1,6 @@
 using ASKEM.Upstream: presentationToLabelledPetriNet, deserialize_wiringdiagram, vectorfield
 using ASKEM.Dec2022Demo: formSIRD, formTVParams, solveODE, zeroVal, runControlOptim, makeK, runControlAuto, draw, sig, invsig
 
-sig(x) = 1/(1+exp(-x))
-invsig(x) = log(x/(1-x))
-
-#function formTVParams(p,alpha,t_start)
-#function formTVParams(p,alpha,start_time_stop_time)
-function formTVParams(p,alpha,mask_transmission_fraction)
-    #t_start = first(start_time_stop_time)
-    #t_end = last(start_time_stop_time)
-    t_start = tspan[1] + (tspan[2] - tspan[1])*sig(alpha[1])
-    t_end = t_start + exp(alpha[2])
-    sig_sharpness = 5
-    new_p_i(u,t) = p[1] * (1 - mask_transmission_fraction*sig(sig_sharpness*(t-t_start)) + mask_transmission_fraction*(1-sigmoid(sig_sharpness*(t-t_end)))) 
-    new_p_r(u,t) = p[2]
-    new_p_d(u,t) = p[3]
-    p_t = [new_p_i,new_p_r,new_p_d]
-    return p_t
-end
 
 
 function formSEIRHD()
@@ -30,6 +13,66 @@ function formSEIRHD()
 )
   return SEIRHD
 end
+
+seirhd = formSEIRHD()
+
+seirhd_typed = ACSetTransformation(seirhd, types,
+  S=[s, s, s, s, s, s],
+  T=[t_interact, t_disease, t_disease, t_disease, t_disease],
+  I=[i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease],
+  O=[o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease],
+  Name=name -> nothing
+)
+@assert is_natural(seirhd_typed)
+
+
+vax_lpn = LabelledPetriNet([:U, :V],
+  :infuu => ((:U, :U) => (:U, :U)),
+  :infvu => ((:V, :U) => (:V, :U)),
+  :infuv => ((:U, :V) => (:U, :V)),
+  :infvv => ((:V, :V) => (:V, :V)),
+  :vax => (:U => :V),
+)
+# vax_aug = augLabelledPetriNet(vax_lpn, vax_aug_st)
+
+Vax_aug_typed = ACSetTransformation(vax_lpn, types,
+  S=[s, s],
+  T=[t_interact, t_interact, t_interact, t_interact, t_strata],
+  I=[i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_interact1, i_interact2, i_strata],
+  O=[o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_interact1, o_interact2, o_strata],
+  Name=name -> nothing
+)
+@assert is_natural(Vax_aug_typed)
+
+seirhd_vax = stratify_typed(
+  seirhd_typed=>[[:strata],[:strata],[:strata],[:strata],[:strata],[]],
+  Vax_aug_typed=>[[:disease,:infect],[:disease,:infect]], 
+  types′)
+
+@assert is_natural(seirhd_vax)
+
+AlgebraicPetri.Graph(dom(seirhd_vax))
+
+
+
+  sig(x) = 1/(1+exp(-x))
+  invsig(x) = log(x/(1-x))
+  
+  #function formTVParams(p,alpha,t_start)
+  #function formTVParams(p,alpha,start_time_stop_time)
+  function formTVParams(p,alpha,mask_transmission_fraction)
+      #t_start = first(start_time_stop_time)
+      #t_end = last(start_time_stop_time)
+      t_start = tspan[1] + (tspan[2] - tspan[1])*sig(alpha[1])
+      t_end = t_start + exp(alpha[2])
+      sig_sharpness = 5
+      new_p_i(u,t) = p[1] * (1 - mask_transmission_fraction*sig(sig_sharpness*(t-t_start)) + mask_transmission_fraction*(1-sigmoid(sig_sharpness*(t-t_end)))) 
+      new_p_r(u,t) = p[2]
+      new_p_d(u,t) = p[3]
+      p_t = [new_p_i,new_p_r,new_p_d]
+      return p_t
+  end
+  
 
 #function runControlOptim(SIRD, tv_prob, p, tspan, hosp_rt, thresh_H, t_start, alpha_init)
 # tspan is the tspan over entire time series
