@@ -76,8 +76,10 @@ Vax_aug_typed = ACSetTransformation(vax_lpn, types,
 @assert is_natural(Vax_aug_typed)
 
 # Stratified
-# seirdnat_vax = typed_stratify(seirdnat_typed, vax_typed)
-# seirdnat_vax = stratify_typed <- TODO: Use the new stratify_typed from stratification made easy
+seirdnat_vax = stratify_typed(
+  seirdnat_typed=>[[:strata],[:strata],[:strata],[:strata],[]],
+  Vax_aug_typed=>[[:disease,:infect],[:disease,:infect]], 
+  types′) 
 
 #=function formSEIRHD()
   SEIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
@@ -131,7 +133,8 @@ seirdnat_2x = oapply(SEIRD_composition_pattern, Dict(
 )) |> apex
 
 # CHIMESVIIvR
-sviivr_lbn = read_json_acset(LabelledBilayerNetwork, "../../data/CHIME_SVIIvR_dynamics_BiLayer.json")
+sviivr_lbn_pth = joinpath(@__DIR__,"../../data/CHIME_SVIIvR_dynamics_BiLayer.json")
+sviivr_lbn = read_json_acset(LabelledBilayerNetwork, sviivr_lbn_pth)
 sviivr = LabelledPetriNet()
 migrate!(sviivr, sviivr_lbn)
 
