@@ -80,6 +80,9 @@ seirdnat_vax = stratify_typed(
   Vax_aug_typed=>[[:disease,:natural],[:disease,]], 
   types′)
 
+write_json_acset(dom(seirdnat_vax), joinpath("outputs/mdl_jsons/", "s1_seirdnat_vax.json"))
+
+
 #=function formSEIRHD()
   SEIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
   :inf => ((:S, :I)=>(:E, :I)),
@@ -130,11 +133,17 @@ seirdnat_2x = oapply(SEIRD_composition_pattern, Dict(
   :cross_exposure => cross_exposure
 )) |> apex
 
+write_json_acset(seirdnat_2x, joinpath("outputs/mdl_jsons/", "s1_seirdnat_2x.json"))
+
+
 # CHIMESVIIvR
-sviivr_lbn_pth = joinpath(@__DIR__,"../../data/CHIME_SVIIvR_dynamics_BiLayer.json")
+sviivr_lbn_pth = joinpath(@__DIR__,"../data/CHIME_SVIIvR_dynamics_BiLayer.json")
 sviivr_lbn = read_json_acset(LabelledBilayerNetwork, sviivr_lbn_pth)
 sviivr = LabelledPetriNet()
 migrate!(sviivr, sviivr_lbn)
+
+write_json_acset(sviivr, joinpath("outputs/mdl_jsons/", "s1_chime_sviivr.json"))
+
 
 #***
 # Q3b
@@ -210,6 +219,9 @@ tv_sol = solveODE(tv_prob)
 age_aug = makeMultiAge(16)
 age_typed = typeAge(age_aug, types)
 seirdnat_vax_age = typed_stratify(seirdnat_vax, age_typed)
+
+write_json_acset(dom(seirdnat_vax_age), joinpath("outputs/mdl_jsons/", "s1_seirdnat_vax_age.json"))
+
 
 #***
 # Q6d

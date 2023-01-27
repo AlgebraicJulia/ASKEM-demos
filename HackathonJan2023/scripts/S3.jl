@@ -19,12 +19,11 @@ seirhd = formSEIRHD()
 write_json_acset(seirhd, joinpath("outputs/mdl_jsons/", "s3_seirhd.json"))
 
 function formSEIRD()
-    SEIRD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
+    SEIRD = LabelledPetriNet([:S, :E, :I, :R, :D],
 	  :exp => ((:S, :I)=>(:E, :I)),
 	  :conv => (:E=>:I),
 	  :rec => (:I=>:R),
-	  :hosp => (:I=>:H),
-      :death => (:H=>:D),
+	  :death => (:I=>:D),
 	)
     return SEIRD
 end
@@ -33,9 +32,8 @@ seird = formSEIRD()
 write_json_acset(seird, joinpath("outputs/mdl_jsons/", "s3_seird.json"))
 
 function formSIRHD()
-    SIRHD = LabelledPetriNet([:S, :E, :I, :R, :H, :D],
-	  :exp => ((:S, :I)=>(:E, :I)),
-	  :conv => (:E=>:I),
+    SIRHD = LabelledPetriNet([:S, :I, :R, :H, :D],
+	  :exp => ((:S, :I)=>(:I, :I)),
 	  :rec => (:I=>:R),
 	  :hosp => (:I=>:H),
       :death => (:H=>:D),
@@ -45,6 +43,30 @@ end
 
 sirhd = formSIRHD()
 write_json_acset(sirhd, joinpath("outputs/mdl_jsons/", "s3_sirhd.json"))
+
+
+function form_seird_renew()
+    seird_renew = LabelledPetriNet([:S, :E, :I, :R, :D],
+	  :exp => ((:S, :I)=>(:E, :I)),
+	  :conv => (:E=>:I),
+	  :rec => (:I=>:R),
+	  :death => (:I=>:D),
+      :renew => (:R=>:S)
+	)
+    return seird_renew
+end
+
+seird_renew = form_seird_renew()
+write_json_acset(seird_renew, joinpath("outputs/mdl_jsons/", "s3_seird_renew.json"))
+
+
+max_e_h = mca(seird, sirhd)
+AlgebraicPetri.Graph(max_e_h[1])
+max_3way = mca(max_e_h[1], seirhd)
+AlgebraicPetri.Graph(max_3way[1])
+
+max_seird_renew = mca(seird, seird_renew)
+AlgebraicPetri.Graph(max_seird_renew[1])
 
 
 valueat(x::Number, u, t) = x
