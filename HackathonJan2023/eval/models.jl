@@ -169,6 +169,8 @@ new_t = add_transition!(sidarthe_v;tname=:vax)
 new_i = add_input!(sidarthe_v,new_t,1)
 new_o = add_output!(sidarthe_v,new_t,new_s)
 
+write_json_acset(sidarthe_v,"sidarthe_v.json")
+
 mca_sidarthe_v = mca(sidarthe,sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
 
