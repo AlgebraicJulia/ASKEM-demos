@@ -74,6 +74,63 @@ age_typed = typeAge(age_aug,types)
 sir_age16 = typed_stratify(sir_typed, age_typed)
 write_json_acset(dom(sir_age16),"sir_age16.json")
 
+#*****************
+# Matrices for S1*
+#*****************
+
+using LinearAlgebra
+
+function form_uniform_matrix(dim::Int=3)
+  #julia> form_uniform_matrix()
+  #3×3 Matrix{Float64}:
+  # 0.333333  0.333333  0.333333
+  # 0.333333  0.333333  0.333333
+  # 0.333333  0.333333  0.333333
+  fill(1/dim, (dim,dim))
+end
+
+function form_significant_ingroup_matrix(dim::Int=3, ingroup_contact::Float64=2/3)
+  #julia> form_significant_ingroup_matrix()
+  #3×3 Matrix{Float64}:
+  # 0.666667  0.333333  0.333333
+  # 0.333333  0.666667  0.333333
+  # 0.333333  0.333333  0.666667
+  M = fill(1/dim, (dim,dim))
+  M[diagind(M)] .= ingroup_contact
+  M
+end
+
+function form_no_intergroup_contact_matrix(dim::Int=3, ingroup_contact::Float64=1/3)
+  #julia> form_no_intergroup_contact_matrix()
+  #3×3 Matrix{Float64}:
+  # 0.333333  0.0       0.0
+  # 0.0       0.333333  0.0
+  # 0.0       0.0       0.333333
+  M = zeros((dim,dim))
+  M[diagind(M)] .= ingroup_contact
+  M
+end
+
+function form_scaled_uniform_matrix(dim::Int=3, scale::Float64=0.5)
+  #julia> form_scaled_uniform_matrix()
+  #3×3 Matrix{Float64}:
+  # 0.166667  0.166667  0.166667
+  # 0.166667  0.166667  0.166667
+  # 0.166667  0.166667  0.166667
+  scale*fill(1/dim, (dim,dim))
+end
+
+function form_skewed_compliance_matrix(dim::Int=3, min_contact::Float64=0.1, max_contact::Float64=0.9)
+  #julia> form_skewed_compliance_matrix()
+  #3×3 Matrix{Float64}:
+  # 0.9       0.333333  0.333333
+  # 0.333333  0.5       0.333333
+  # 0.333333  0.333333  0.1
+  M = fill(1/dim, (dim,dim))
+  M[diagind(M)] .= range(max_contact, min_contact, length=dim)
+  M
+end
+
 #*****
 # S2 *
 #*****
@@ -175,3 +232,4 @@ sirhd_renew_vax = typed_stratify(sirhd_renew_typed, vax_typed)
 write_json_acset(dom(sirhd_renew_vax),"sirhd_renew_vax.json")
 sirhd_renew_vax_age16 = typed_stratify(sirhd_renew_vax, age_typed)
 write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
+
