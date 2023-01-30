@@ -114,9 +114,13 @@ function form_sirhd()
 end
 
 sir = form_sir()
+write_json_acset(sir,"sir.json")
 sird = form_sird()
+write_json_acset(sird,"sird.json")
 sirh = form_sirh()
+write_json_acset(sirh,"sirh.json")
 sirhd = form_sirhd()
+write_json_acset(sirhd,"sirhd.json")
 
 vax_lpn = formVax()
 vax_aug_st = vaxAugStates()
@@ -126,19 +130,21 @@ vax_typed = typeVax(vax_aug,types)
 sirhd_aug = augLabelledPetriNet(sirhd,[:S, :I, :R, :H])
 sirhd_typed = ACSetTransformation(sirhd_aug, types,
   S = [s, s, s, s, s],
-  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata, t_strata],
-  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata, i_strata],
-  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata, o_strata],
+  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
+  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
+  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
   Name = name -> nothing 
   )
 @assert is_natural(sirhd_typed)
 
-sirhd_vax = typed_stratify(sirhd_typed, age_typed)
+sirhd_vax = typed_stratify(sirhd_typed, vax_typed)
+write_json_acset(dom(sirhd_vax),"sirhd_vax.json")
 
 n = 16
 age_aug = make_multi_age(n)
 age_typed = typeAge(age_aug,types)
-sirhd_vax_age_16 = typed_stratify(sirhd_vax, age_typed)
+sirhd_vax_age16 = typed_stratify(sirhd_vax, age_typed)
+write_json_acset(dom(sirhd_vax_age16),"sirhd_vax_age16.json")
 
 function form_sirhd_renew()
     SIRHD_renew = LabelledPetriNet([:S, :I, :R, :H, :D],
@@ -153,12 +159,19 @@ function form_sirhd_renew()
 end
 
 sirhd_renew = form_sirhd_renew()
+write_json_acset(sirhd_renew,"sirhd_renew.json")
+
 sirhd_renew_aug = augLabelledPetriNet(sirhd_renew,[:S, :I, :R, :H])
 sirhd_renew_typed = ACSetTransformation(sirhd_renew_aug, types,
   S = [s, s, s, s, s],
-  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata, t_strata],
-  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata, i_strata],
-  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata, o_strata],
+  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
+  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
+  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
   Name = name -> nothing 
   )
 @assert is_natural(sirhd_renew_typed)
+
+sirhd_renew_vax = typed_stratify(sirhd_renew_typed, vax_typed)
+write_json_acset(dom(sirhd_renew_vax),"sirhd_renew_vax.json")
+sirhd_renew_vax_age16 = typed_stratify(sirhd_renew_vax, age_typed)
+write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
