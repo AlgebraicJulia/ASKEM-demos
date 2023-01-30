@@ -136,6 +136,12 @@ end
 #*****
 sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
 
+sidarthe_v = deepcopy(sidarthe)
+new_s = add_species!(sidarthe_v;sname=:V)
+new_t = add_transition!(sidarthe_v;tname=:vax)
+new_i = add_input!(sidarthe_v,new_t,1)
+new_o = add_output!(sidarthe_v,new_t,new_s)
+
 mca_sidarthe_v = mca(sidarthe,sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
 
