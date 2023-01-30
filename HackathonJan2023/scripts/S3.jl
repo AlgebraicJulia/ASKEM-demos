@@ -60,6 +60,10 @@ seird_renew = form_seird_renew()
 write_json_acset(seird_renew, joinpath("outputs/mdl_jsons/", "s3_seird_renew.json"))
 
 
+AlgebraicPetri.Graph(seirhd)
+AlgebraicPetri.Graph(seird)
+AlgebraicPetri.Graph(sirhd)
+
 max_e_h = mca(seird, sirhd)
 AlgebraicPetri.Graph(max_e_h[1])
 max_3way = mca(max_e_h[1], seirhd)

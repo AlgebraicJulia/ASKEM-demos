@@ -150,6 +150,7 @@ write_json_acset(sviivr, joinpath("outputs/mdl_jsons/", "s1_chime_sviivr.json"))
 #***
 # Pairwise comparison
 max_12 = mca(dom(seirdnat_vax), seirdnat_2x)
+AlgebraicPetri.Graph(max_12[1])
 max_13 = mca(dom(seirdnat_vax), sviivr)
 max_23 = mca(seirdnat_2x, sviivr)
 
