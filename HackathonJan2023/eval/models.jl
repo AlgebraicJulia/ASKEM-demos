@@ -79,6 +79,8 @@ write_json_acset(dom(sir_age16),"sir_age16.json")
 #*****************
 
 using LinearAlgebra
+using CSV
+using DataFrames
 
 function form_uniform_matrix(dim::Int=3)
   #julia> form_uniform_matrix()
@@ -130,6 +132,31 @@ function form_skewed_compliance_matrix(dim::Int=3, min_contact::Float64=0.1, max
   M[diagind(M)] .= range(max_contact, min_contact, length=dim)
   M
 end
+
+function grab_contact_matrix_from_csv(filename)
+  Matrix{Float64}(CSV.read(filename, DataFrame))
+end
+
+function grab_ages_from_csv(filename)
+  mat = Matrix(CSV.read(filename, DataFrame))
+  total_pop = mat[1,2]
+  distribution = Vector{Float64}(mat[1,3:end])
+  return (total_pop, distribution)
+end
+
+s1_ta1_data_directory = "../program-milestones/6-month-milestone/evaluation/scenario_1/ta_1/"
+
+#grab_belgium_contact_matrix() = Matrix{Float64}(CSV.read(joinpath(s1_ta1_data_directory, "belgium_all_locations_cm.csv"), DataFrame))
+#grab_india_contact_matrix() = Matrix{Float64}(CSV.read(joinpath(s1_ta1_data_directory, "india_all_locations_cm.csv"), DataFrame))
+#grab_usa_home_contact_matrix() = Matrix{Float64}(CSV.read(joinpath(s1_ta1_data_directory, "india_all_locations_cm.csv"), DataFrame))
+grab_belgium_contact_matrix() = grab_contact_matrix_from_csv(joinpath(s1_ta1_data_directory, "belgium_all_locations_cm.csv"))
+grab_india_contact_matrix() = grab_contact_matrix_from_csv(joinpath(s1_ta1_data_directory, "india_all_locations_cm.csv"))
+grab_usa_home_contact_matrix() = grab_contact_matrix_from_csv(joinpath(s1_ta1_data_directory, "usa_home_cm.csv"))
+
+grab_belgium_pop_distribution() = grab_ages_from_csv(joinpath(s1_ta1_data_directory, "2016_belgium_population_by_age.csv"))
+grab_india_pop_distribution() = grab_ages_from_csv(joinpath(s1_ta1_data_directory, "2016_india_population_by_age.csv"))
+grab_usa_pop_distribution() = grab_ages_from_csv(joinpath(s1_ta1_data_directory, "2016_us_population_by_age.csv"))
+
 
 #*****
 # S2 *
