@@ -68,7 +68,7 @@ age_aug = make_multi_age(3)
 age_typed = typeAge(age_aug,types)
 sir_age3 = typed_stratify(sir_typed, age_typed)
 write_json_acset(dom(sir_age3),"sir_age3.json")
-
+Graph(dom(sir_age3))
 age_aug = make_multi_age(16)
 age_typed = typeAge(age_aug,types)
 sir_age16 = typed_stratify(sir_typed, age_typed)
