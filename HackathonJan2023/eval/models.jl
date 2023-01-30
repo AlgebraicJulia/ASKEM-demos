@@ -37,15 +37,42 @@ sir_typed = ACSetTransformation(sir_aug, types,
   )
 @assert is_natural(sir_typed)
 
-age_aug = makeMultiAge(3)
+
+function make_multi_age(n;f_aug=true)
+    lstates = []
+    ltrans = []
+    for ii in 1:n
+        push!(lstates,Symbol("Age"*string(ii)))
+    end
+    for ii in 1:n
+        for jj in 1:n
+            push!(ltrans,Symbol(("inf",string(ii),string(jj))) => ((lstates[ii],lstates[jj])=>(lstates[ii],lstates[jj])))
+        end
+    end
+    if f_aug
+        for ii in 1:n
+            push!(ltrans,Symbol("dis"*string(ii)) => ((lstates[ii])=>(lstates[ii])))
+        end
+    end
+    if f_aug
+        for ii in 1:n
+            push!(ltrans,Symbol("id"*string(ii)) => ((lstates[ii])=>(lstates[ii])))
+        end
+    end
+    MultiAge = LabelledPetriNet(lstates,ltrans...)
+    return MultiAge
+end
+
+
+age_aug = make_multi_age(3)
 age_typed = typeAge(age_aug,types)
 sir_age3 = typed_stratify(sir_typed, age_typed)
-write_json_acset(sir_age3,"sir_age3.json")
+write_json_acset(dom(sir_age3),"sir_age3.json")
 
-age_aug = makeMultiAge(16)
+age_aug = make_multi_age(16)
 age_typed = typeAge(age_aug,types)
 sir_age16 = typed_stratify(sir_typed, age_typed)
-write_json_acset(sir_age3,"sir_age16.json")
+write_json_acset(dom(sir_age16),"sir_age16.json")
 
 #*****
 # S2 *
@@ -109,7 +136,7 @@ sirhd_typed = ACSetTransformation(sirhd_aug, types,
 sirhd_vax = typed_stratify(sirhd_typed, age_typed)
 
 n = 16
-age_aug = makeMultiAge(n)
+age_aug = make_multi_age(n)
 age_typed = typeAge(age_aug,types)
 sirhd_vax_age_16 = typed_stratify(sirhd_vax, age_typed)
 
