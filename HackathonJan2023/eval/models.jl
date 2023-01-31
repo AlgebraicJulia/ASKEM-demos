@@ -183,7 +183,7 @@ sidarthe_sub = Subobject(
 )
 negate(sidarthe_sub)
 
-Graph(dom(hom(negate(sidarthe_sub))))
+AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
 
 #*****
 # S3 *
