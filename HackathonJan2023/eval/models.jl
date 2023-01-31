@@ -174,6 +174,17 @@ write_json_acset(sidarthe_v,"sidarthe_v.json")
 mca_sidarthe_v = mca(sidarthe,sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
 
+sidarthe_sub = Subobject(
+  sidarthe_v,
+  S=parts(sidarthe, :S),
+  T=parts(sidarthe, :T),
+  I=parts(sidarthe, :I),
+  O=parts(sidarthe, :O)
+)
+negate(sidarthe_sub)
+
+Graph(dom(hom(negate(sidarthe_sub))))
+
 #*****
 # S3 *
 #*****
