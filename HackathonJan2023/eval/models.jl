@@ -161,7 +161,8 @@ grab_usa_pop_distribution() = grab_ages_from_csv(joinpath(s1_ta1_data_directory,
 #*****
 # S2 *
 #*****
-sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
+# using using Catlab.CategoricalAlgebra
+sidarthe = read_json_acset(LabelledPetriNet,"eval/sidarthe.json")
 
 sidarthe_v = deepcopy(sidarthe)
 new_s = add_species!(sidarthe_v;sname=:V)
@@ -184,6 +185,7 @@ sidarthe_sub = Subobject(
 negate(sidarthe_sub)
 
 AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
+AlgebraicPetri.Graph(dom(hom(~(sidarthe_sub))))
 
 #*****
 # S3 *
