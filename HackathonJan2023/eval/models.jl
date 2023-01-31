@@ -279,3 +279,18 @@ write_json_acset(dom(sirhd_renew_vax),"sirhd_renew_vax.json")
 sirhd_renew_vax_age16 = typed_stratify(sirhd_renew_vax, age_typed)
 write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
 
+
+# ModelingToolkit, Catlab, AlgebraicPetri, DifferentialEquations, Plots
+sir = LabelledPetriNet([:S, :I, :R],
+  :inf => ((:S, :I)=>(:I, :I)),
+  :rec => (:I=>:R),
+)
+sir_sys = ODESystem(sir)
+
+tspan = (0.0, 40.0)
+u0 = [990, 10, 0]
+p = [0.05*10/1000, 0.25]
+sir_prob = ODEProblem(sir_sys, u0, tspan, p)
+sir_sol = solve(sir_prob)
+
+plot(sir_sol)
