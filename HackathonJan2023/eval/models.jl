@@ -212,6 +212,7 @@ function form_sirhd()
     :inf => ((:S, :I)=>(:I, :I)),
     :rec => (:I=>:R),
     :hosp => (:I=>:H),
+    :ideath => (:I=>:D),
     :hrec => (:H=>:R),
     :death => (:H=>:D),
   )
@@ -235,9 +236,9 @@ vax_typed = typeVax(vax_aug,types)
 sirhd_aug = augLabelledPetriNet(sirhd,[:S, :I, :R, :H])
 sirhd_typed = ACSetTransformation(sirhd_aug, types,
   S = [s, s, s, s, s],
-  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
-  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
-  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
+  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
+  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
+  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
   Name = name -> nothing 
   )
 @assert is_natural(sirhd_typed)
@@ -256,6 +257,7 @@ function form_sirhd_renew()
     :inf => ((:S, :I)=>(:I, :I)),
     :rec => (:I=>:R),
     :hosp => (:I=>:H),
+    :ideath => (:I=>:D),
     :hrec => (:H=>:R),
     :death => (:H=>:D),
     :renew => (:R=>:S),
@@ -269,9 +271,9 @@ write_json_acset(sirhd_renew,"sirhd_renew.json")
 sirhd_renew_aug = augLabelledPetriNet(sirhd_renew,[:S, :I, :R, :H])
 sirhd_renew_typed = ACSetTransformation(sirhd_renew_aug, types,
   S = [s, s, s, s, s],
-  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
-  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
-  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
+  T = [t_interact, t_disease, t_disease, t_disease, t_disease, t_disease, t_disease, t_strata, t_strata, t_strata, t_strata],
+  I = [i_interact1, i_interact2, i_disease, i_disease, i_disease, i_disease, i_disease, i_disease, i_strata, i_strata, i_strata, i_strata],
+  O = [o_interact1, o_interact2, o_disease, o_disease, o_disease, o_disease, o_disease, o_disease, o_strata, o_strata, o_strata, o_strata],
   Name = name -> nothing 
   )
 @assert is_natural(sirhd_renew_typed)
@@ -285,6 +287,7 @@ write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
 # Code to add to JuliaHub docs for S3
 #***
 # ModelingToolkit, Catlab, AlgebraicPetri, DifferentialEquations, Plots
+# using Catlab.CategoricalAlgebra
 sir = LabelledPetriNet([:S, :I, :R],
   :inf => ((:S, :I)=>(:I, :I)),
   :rec => (:I=>:R),
@@ -314,7 +317,7 @@ sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
 sirhd_sys = ODESystem(sirhd)
 tspan = (0.0, 40.0)
 u0 = [990, 10, 0, 0, 0]
-p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1]
+p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1, 0.1]
 sirhd_prob = ODEProblem(sirhd_sys, u0, tspan, p)
 sirhd_sol = solve(sirhd_prob)
 plot(sirhd_sol)
