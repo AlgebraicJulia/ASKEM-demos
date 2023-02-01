@@ -281,18 +281,50 @@ write_json_acset(dom(sirhd_renew_vax),"sirhd_renew_vax.json")
 sirhd_renew_vax_age16 = typed_stratify(sirhd_renew_vax, age_typed)
 write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
 
-
+#***
+# Code to add to JuliaHub docs for S3
+#***
 # ModelingToolkit, Catlab, AlgebraicPetri, DifferentialEquations, Plots
 sir = LabelledPetriNet([:S, :I, :R],
   :inf => ((:S, :I)=>(:I, :I)),
   :rec => (:I=>:R),
 )
 sir_sys = ODESystem(sir)
-
 tspan = (0.0, 40.0)
 u0 = [990, 10, 0]
 p = [0.05*10/1000, 0.25]
 sir_prob = ODEProblem(sir_sys, u0, tspan, p)
 sir_sol = solve(sir_prob)
-
 plot(sir_sol)
+
+sir = read_json_acset(LabelledPetriNet,"sir.json")
+
+sird = read_json_acset(LabelledPetriNet,"sird.json")
+# sird_sys = ODESystem(sird)
+# tspan = (0.0, 40.0)
+# u0 = [990, 10, 0]
+# p = [0.05*10/1000, 0.25]
+# sird_prob = ODEProblem(sird_sys, u0, tspan, p)
+# sird_sol = solve(sird_prob)
+# plot(sird_sol)
+
+sirh = read_json_acset(LabelledPetriNet,"sirh.json")
+
+sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
+sirhd_sys = ODESystem(sirhd)
+tspan = (0.0, 40.0)
+u0 = [990, 10, 0, 0, 0]
+p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1]
+sirhd_prob = ODEProblem(sirhd_sys, u0, tspan, p)
+sirhd_sol = solve(sirhd_prob)
+plot(sirhd_sol)
+
+sirhd_vax = read_json_acset(LabelledPetriNet,"sirhd_vax.json")
+
+sirhd_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_vax_age16.json")
+
+sirhd_renew = read_json_acset(LabelledPetriNet,"sirhd_renew.json")
+
+sirhd_renew_vax = read_json_acset(LabelledPetriNet,"sirhd_renew_vax.json")
+
+sirhd_renew_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_renew_vax_age16.json")
