@@ -256,6 +256,12 @@ age_typed = typeAge(age_aug,types)
 sirhd_vax_age16 = typed_stratify(sirhd_vax, age_typed)
 write_json_acset(dom(sirhd_vax_age16),"sirhd_vax_age16.json")
 
+n = 11
+age_aug = make_multi_age(n)
+age_typed = typeAge(age_aug,types)
+sirhd_vax_age11 = typed_stratify(sirhd_vax, age_typed)
+write_json_acset(dom(sirhd_vax_age11),"sirhd_vax_age11.json")
+
 function form_sirhd_renew()
     SIRHD_renew = LabelledPetriNet([:S, :I, :R, :H, :D],
     :inf => ((:S, :I)=>(:I, :I)),
@@ -286,6 +292,10 @@ sirhd_renew_vax = typed_stratify(sirhd_renew_typed, vax_typed)
 write_json_acset(dom(sirhd_renew_vax),"sirhd_renew_vax.json")
 sirhd_renew_vax_age16 = typed_stratify(sirhd_renew_vax, age_typed)
 write_json_acset(dom(sirhd_renew_vax_age16),"sirhd_renew_vax_age16.json")
+
+sirhd_renew_vax_age11 = typed_stratify(sirhd_renew_vax, age_typed)
+write_json_acset(dom(sirhd_renew_vax_age11),"sirhd_renew_vax_age11.json")
+
 
 #***
 # Code to add to JuliaHub docs for S3
@@ -335,3 +345,6 @@ sirhd_renew = read_json_acset(LabelledPetriNet,"sirhd_renew.json")
 sirhd_renew_vax = read_json_acset(LabelledPetriNet,"sirhd_renew_vax.json")
 
 sirhd_renew_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_renew_vax_age16.json")
+
+sirhd_vax_age11 = read_json_acset(LabelledPetriNet,"sirhd_vax_age11.json")
+sirhd_renew_vax_age11 = read_json_acset(LabelledPetriNet,"sirhd_renew_vax_age11.json")
