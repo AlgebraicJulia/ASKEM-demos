@@ -162,6 +162,7 @@ grab_usa_pop_distribution() = grab_ages_from_csv(joinpath(s1_ta1_data_directory,
 # S2 *
 #*****
 # using using Catlab.CategoricalAlgebra
+using AlgebraicPetri.SubACSets
 sidarthe = read_json_acset(LabelledPetriNet,"eval/sidarthe.json")
 
 sidarthe_v = deepcopy(sidarthe)
@@ -169,6 +170,9 @@ new_s = add_species!(sidarthe_v;sname=:V)
 new_t = add_transition!(sidarthe_v;tname=:vax)
 new_i = add_input!(sidarthe_v,new_t,1)
 new_o = add_output!(sidarthe_v,new_t,new_s)
+new_t2 = add_transition!(sidarthe_v;tname=:extra)
+new_i = add_input!(sidarthe_v,new_t2,3)
+new_o = add_output!(sidarthe_v,new_t2,8)
 
 write_json_acset(sidarthe_v,"sidarthe_v.json")
 
