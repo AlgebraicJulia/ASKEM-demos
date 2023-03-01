@@ -1,5 +1,5 @@
 module SubACSets
-export mca
+export mca, visualize_overlap
 
 using Catlab, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.CategoricalAlgebra.FinSets
 using Catlab.Graphics
@@ -10,6 +10,7 @@ import Catlab.CategoricalAlgebra.FinCats: FreeCatGraph, FinDomFunctor, collect_o
 using Catlab.Programs
 
 using AlgebraicPetri
+using AlgebraicPetri: Subgraph, Attributes, Edge, Graphviz
 using ..Ontologies
 
 concatmap(f,xs) = mapreduce(f, vcat, xs; init =[])
@@ -85,6 +86,49 @@ function mca_help(X::ACSet, Y::ACSet)
     ω = maximum(map(size,Y_subs))
     filter(y -> size(y) == ω, Y_subs)
   end
+end
+
+
+"""
+    O --> B
+    ↓     ↓
+    A -->⌜A+B         
+
+Visualize the relation between two models via drawing the induced cospan of the 
+pushout.
+"""
+visualize_overlap(o_span) = o_span |> colimit |> cocone |> Graph 
+
+function Graph(m::Multicospan{<:AbstractPetriNet})
+  apex = Subgraph(m.apex; name="clusterApex", pre="ap_")
+
+  leg_graphs = map(enumerate(m.legs)) do (i, l)
+    Subgraph(l.dom; name="clusterLeg$i", pre="leg$(i)_")
+  end
+
+  graph_attrs = Attributes(:rank=>"same")
+  node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
+  edge_attrs  = Attributes(:splines=>"splines")
+
+  t_edges = map(enumerate(m.legs)) do (i, l)
+    map(1:nt(dom(l))) do t
+      Edge(["\"leg$(i)_t$(t)\"", "\"ap_t$(l.components[:T](t))\"",],
+      Attributes(:constraint=>"false", :style=>"dotted"))
+    end
+  end
+
+  s_edges = map(enumerate(m.legs)) do (i, l)
+    map(1:ns(dom(l))) do s
+      Edge(["\"leg$(i)_s$(s)\"", "\"ap_s$(l.components[:S](s))\"", ],
+      Attributes(:constraint=>"false", :style=>"dotted"))
+    end
+  end
+  if length(leg_graphs) == 2
+    stmts = vcat([first(leg_graphs),apex,last(leg_graphs)], t_edges..., s_edges...)
+  else 
+    stmts = vcat([apex], leg_graphs, t_edges..., s_edges...)
+  end 
+  g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
 end
 
 end
