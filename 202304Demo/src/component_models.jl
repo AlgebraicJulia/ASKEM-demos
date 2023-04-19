@@ -243,41 +243,53 @@ typed_sir_aug = add_reflexives(
 
 # Travel Model
 
-function make_rgn(n; stype=:Pop, ttype=:strata, ontology=infectious_ontology, reflexives=[:infect,:disease])
+function make_rgn(n)
     uwd = RelationalPrograms.TypedUnnamedRelationDiagram{Symbol,Symbol,Symbol}()
     # Add junctions and store their mapped keys
     junctions = Dict(begin
         junction = Symbol("Region$(i)")
-        junction => add_junction!(uwd, stype, variable=junction)
+        junction => add_junction!(uwd, :Pop, variable=junction)
     end for i in 1:n)
 
     # figure out unique pairs of junctions
     pairs = filter(x -> first(x) != last(x), collect(Iterators.product(keys(junctions), keys(junctions))))
     for pair in pairs
-        box = add_box!(uwd, [junction_type(uwd, junctions[p]) for p in pair], name=ttype)
+        box = add_box!(uwd, [junction_type(uwd, junctions[p]) for p in pair], name=:strata)
         for (rgn, port) in zip(pair, ports(uwd, box))
             set_junction!(uwd, port, junctions[rgn])
         end
     end
     # convert uwd to ACSetTransformation using type ontology
-    act = oapply_typed(ontology, uwd, [Symbol("$(a)_$(b)") for (a,b) in pairs])
+    act = oapply_typed(infectious_ontology, uwd, [Symbol("$(a)_$(b)") for (a,b) in pairs])
     # if reflexives are provided, add them `n` times
-    if !isnothing(reflexives)
-        act = add_reflexives(act, repeat([reflexives], n), ontology)
-    end
-
-    act
+    add_reflexives(act, repeat([[:infect,:disease]], n), infectious_ontology)
 end
 
-typed_travel_aug = make_rgn(2)
+travel_2 = make_rgn(2)
 
-Graph(dom(typed_travel_aug))
+Graph(dom(travel_2))
 
 # Living Model
 
+function make_living(n)
+    states = [Symbol("Living$(i)") for i in 1:n]
+    typed_living = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, states)
+    add_reflexives(
+        typed_living,
+        repeat([[:disease, :strata]], n),
+        infectious_ontology
+    )
+end
+
+# Living augmented model
+
+living_2 = make_living(2)
+
+Graph(dom(living_2))
 
 # Stratify SIR with travel model
 
-typed_sir_travel = typed_product([typed_sir_aug, typed_travel_aug])
+num_rgns = 2
+short_trip_model = typed_product([typed_sir_aug, make_rgn(num_rgns), make_living(num_rgns)])
 
-Graph(dom(typed_sir_travel))
+Graph(dom(short_trip_model))
