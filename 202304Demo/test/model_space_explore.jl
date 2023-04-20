@@ -84,3 +84,35 @@ function mca_help(X::ACSet, Y::ACSet)
 
 
 
+using GLM
+using DataFrames
+df = DataFrame(x = l_num_rgns)
+df.y1 = run_times
+df.y2 = run_times_3way
+rt_m1 = lm(@formula(y1 ~ 1 + x + x^2), df)
+rt_m2 = lm(@formula(y2 ~ 1 + x + x^2), df)
+
+using Polynomials
+x = variable(Polynomial)
+quadfit = fit(RationalFunction,l_num_rgns,run_times,2,0)
+
+
+function polyfit(u,p) 
+    n = length(u)/2
+    x = u[1:n]
+    y = u[(n+1):end]
+    pred = repeat(p[1],n)
+    for ii in 2:length(p)
+        pred = pred + p[ii]*x.^(ii-1)
+    end
+    sqerr = sum((y-pred).^2)
+end
+u0 = [l_num_rgns; run_times]
+p = [0,1,2]
+using Optimization,
+prob = OptimizationProblem(polyfit,u0,p)
+sol = solve(prob)
+sol = solve(prob, NelderMead())
+
+
+
