@@ -14,6 +14,8 @@ include("EpidemiologicalPetriNets.jl")
 include("SubACSets.jl")
 include("semagrams/Semagrams.jl")
 include("Dec2022Demo.jl")
+include("Interpreter.jl")
+include("API.jl")
 
 @reexport using .PetriMTK
 @reexport using .Interventions
