@@ -1,0 +1,9 @@
+[deps]
+Agents = "46ada45e-f475-11e8-01d0-f70cc89e6671"
+AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+DataMigrations = "0c4ad18d-0c49-4bc2-90d5-5bca8f00d6ae"
+
+[compat]
+Agents = "^5"
