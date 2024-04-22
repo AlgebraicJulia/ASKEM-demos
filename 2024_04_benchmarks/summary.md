@@ -51,6 +51,6 @@ In general any time the world state is large there should be massive speed gains
 
 ## Overall agent-based model workflow
 
-A 100-step ABM simulation with 140 sheep and 20 wolves on a 30x30 grid took on average **3.012 s**. In Agents.jl, this took on average **0.94 ms**. Agents.jl is a purely imperative framework for modeling, specific to Julia code as the model. 
+A 100-step ABM simulation with 140 sheep and 20 wolves on a 30x30 grid took on average **3.012 s**. In Agents.jl, this took on average **0.94 ms**. Agents.jl is a purely imperative framework for modeling, in contrast to AlgebraicRewriting's purely declarative syntax. 
 
 Caveat: this only leverages the in-place rewriting, not the VM nor incremental hom search improvements. 
