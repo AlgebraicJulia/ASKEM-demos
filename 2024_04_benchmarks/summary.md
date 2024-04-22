@@ -13,15 +13,13 @@ The algorithmic improvement over the default method of homomorphism search ("bac
 
 The following data comes from looking for 3-cycles in a 60-vertex random graph. (Times given in ms)
 
-| Run | Backtracking | VM1 | VM2 |
-|---|---|---|---|
-| 1 | 257 | 28 | 22 |
-| 2 | 266 | 28 | 22 |
-| 3 | 263 | 31 | 25 |
-| 4 | 355 | 38 | 31 |
-| 5 | 218 | 24 | 19 |
-
-This demonstrates a roughly 10x speedup in the homomorphism search problem.
+| Run | Backtracking | VM1 | VM2 | Speedup |
+|---|---|---|---|---|
+| 1 | 257 | 28 | 22 | 12x | 
+| 2 | 266 | 28 | 22 | 12x | 
+| 3 | 263 | 31 | 25 | 11x |
+| 4 | 355 | 38 | 31 | 11x | 
+| 5 | 218 | 24 | 19 | 11x |
 
 ## In-place Rewriting
 
@@ -29,13 +27,11 @@ Our general framework for rewriting uses the general categorical concept of a pu
 
 The following benchmark performs a rewrite rule on weighted graphs which replaces a pair of parallel edges with a single edge weighted by the sum, applied to a random graph of 50 vertices. Times are given in ms.
 
-| Run | Functional | Inplace |
-|---|---|---|
-| 1 | 4814 | 101.5| 
-| 2 | 4915 | 99.8 |
-| 3 | 4907 | 97.7 |
-
-This indicates a roughly 50x speedup. 
+| Run | Functional | Inplace | Speedup |
+|---|---|---|---|
+| 1 | 4814 | 101.5| 47x |
+| 2 | 4915 | 99.8 | 49x | 
+| 3 | 4907 | 97.7 | 50x |
 
 ## Incremental Hom Search
 
@@ -43,18 +39,18 @@ Simulations require randomly sampling from sets of possible actions, and a key c
 
 This benchmark compares the start-from-scratch approach to the incremental update approach in a 200 vertex graph, after applying a random rewrite rule (involving appx 3-5 vertex graphs): 
 
-| Run | From scratch | Incremental |
-|---|---|---|
-| 1 | 1764 | 1.7 |
-| 2 | 7472 | 1.3 | 
-| 3 | 4014| 10.2 |
+| Run | From scratch | Incremental | Speedup |
+|---|---|---|---|
+| 1 | 1764 | 1.7 | 1037x |
+| 2 | 7472 | 1.3 | 5748x |
+| 3 | 4014| 10.2 | 394x |
 
 (Times above in ms)
 
-This example had a roughly 5000x speed up, and in general any time the world state is large there should be massive speed gains.
+In general any time the world state is large there should be massive speed gains.
 
 ## Overall agent-based model workflow
 
-A 100-step ABM simulation with 140 sheep and 20 wolves on a 30x30 grid takes **3.012 s**. In Agents.jl, this takes **0.94 ms**.
+A 100-step ABM simulation with 140 sheep and 20 wolves on a 30x30 grid took on average **3.012 s**. In Agents.jl, this took on average **0.94 ms**. Agents.jl is a purely imperative framework for modeling, specific to Julia code as the model. 
 
 Caveat: this only leverages the in-place rewriting, not the VM nor incremental hom search improvements. 
